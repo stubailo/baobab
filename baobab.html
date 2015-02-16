@@ -1,9 +1,9 @@
 <head>
-  <title>wfy1</title>
+  <title>BAOBAB</title>
 </head>
 
 <body>
-  <h1>Nodes</h1>
+  <h1>Baobab</h1>
 
   {{> tree}}
 </body>
@@ -15,7 +15,7 @@
 </template>
 
 <template name = "node">
-<div class="node" style="margin-left: {{indent}}px">  
+<div class="node" style="margin-left: {{indent}}px">
   <input type="text" class="node" value="{{body}}">
   {{#each children}}
     {{> node}}
