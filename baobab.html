@@ -1,14 +1,24 @@
 <head>
-  <title>baobab</title>
+  <title>wfy1</title>
 </head>
 
 <body>
-  <h1>Welcome to Meteor!</h1>
+  <h1>Nodes</h1>
 
-  {{> hello}}
+  {{> tree}}
 </body>
 
-<template name="hello">
-  <button>Click Me</button>
-  <p>You've pressed the button {{counter}} times.</p>
+<template name="tree">
+  {{#each rootNodes}}
+    {{> node }}
+  {{/each}}
+</template>
+
+<template name = "node">
+<div class="node" style="margin-left: {{indent}}px">  
+  <input type="text" class="node" value="{{body}}">
+  {{#each children}}
+    {{> node}}
+  {{/each}}
+</div>
 </template>
