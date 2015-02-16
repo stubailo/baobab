@@ -1,5 +1,5 @@
 Template.tree.helpers({
   rootNodes: function () {
-    return Nodes.find({level: 0});
+    return NodesLocal.find({level: 0});
   }
 });

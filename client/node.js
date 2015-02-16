@@ -3,6 +3,6 @@ Template.node.helpers({
     return 20;
   },
   children: function () {
-    return this.children ? Nodes.find({_id: {$in: this.children}}) : []
+    return this.children ? NodesLocal.find({_id: {$in: this.children}}) : []
   }
 });
