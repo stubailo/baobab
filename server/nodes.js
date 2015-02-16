@@ -1,3 +1,5 @@
+Nodes = new Mongo.Collection("nodes");
+
 NodeSchema = new SimpleSchema({
 
   // When displaying this node in a list of children, sort by this value
@@ -12,15 +14,8 @@ NodeSchema = new SimpleSchema({
   // The id of the node that has this one as its child
   parent: {
     type: String,
-    regex: SimpleSchema.RegEx.Id
-  },
-
-  // The ids of the children of this node, can be null if this node has no
-  // children
-  children: {
-    type: [String],
     regex: SimpleSchema.RegEx.Id,
-    optional: true
+    index: true
   },
 
   // The content of this node
@@ -28,15 +23,38 @@ NodeSchema = new SimpleSchema({
     type: String
   },
 
+  createdAt: {
+    type: Date,
+    autoValue: function () {
+      if (this.isInsert) {
+        return new Date();
+      } else if (this.isUpsert) {
+        return {
+          $setOnInsert: new Date()
+        };
+      } else {
+        this.unset();
+      }
+    }
+  },
+
+  updatedAt: {
+    type: Date,
+    autoValue: function () {
+      return new Date();
+    }
+  },
+
   // The user that first created this node
   createdBy: {
     type: [String],
-    regex: SimpleSchema.RegEx.Id
+    regex: SimpleSchema.RegEx.Id,
+    denyUpdate: true
   },
 
   // A list of all of the users that have edited this node. When the node is
   // created, this is an array with the user who created it.
-  editedBy: {
+  updatedBy: {
     type: [String],
     regex: SimpleSchema.RegEx.Id
   },
@@ -56,3 +74,5 @@ NodeSchema = new SimpleSchema({
     blackbox: true
   }
 });
+
+Nodes.attachSchema(NodeSchema);
