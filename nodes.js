@@ -14,7 +14,7 @@ NodeSchema = new SimpleSchema({
   // The id of the node that has this one as its child
   parent: {
     type: String,
-    regex: SimpleSchema.RegEx.Id,
+    regEx: SimpleSchema.RegEx.Id,
     index: true
   },
 
@@ -48,7 +48,7 @@ NodeSchema = new SimpleSchema({
   // The user that first created this node
   createdBy: {
     type: [String],
-    regex: SimpleSchema.RegEx.Id,
+    regEx: SimpleSchema.RegEx.Id,
     denyUpdate: true
   },
 
@@ -56,14 +56,14 @@ NodeSchema = new SimpleSchema({
   // created, this is an array with the user who created it.
   updatedBy: {
     type: [String],
-    regex: SimpleSchema.RegEx.Id
+    regEx: SimpleSchema.RegEx.Id
   },
 
   // The user that is currently editing this node, if any. If nobody is
   // currently editing this node, this value will be null.
   lockedBy: {
     type: String,
-    regex: SimpleSchema.RegEx.Id,
+    regEx: SimpleSchema.RegEx.Id,
     optional: true
   },
 
