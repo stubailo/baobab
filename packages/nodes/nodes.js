@@ -213,7 +213,13 @@ Meteor.methods({
     check(newContent, String);
 
     Nodes.update(nodeId, {
-      $set: { content: newContent }
+      $set: {
+        content: newContent,
+        updatedAt: new Date()
+      },
+      $addToSet: {
+        updatedBy: this.userId
+      }
     });
   }
 });
