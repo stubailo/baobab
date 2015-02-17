@@ -79,132 +79,29 @@ Meteor.methods({
   }
 });
 
-NodeSchema = new SimpleSchema({
+Nodes.matchPattern = {
+  // The ids of the child nodes, and the order key that should be sorted by
+  children: [{_id: String, order: Number}],
 
-  // When displaying this node in a list of children, sort by this value
-  // XXX it's possible that if we move nodes around a lot, this will exceed
-  // the precision of JavaScript numbers. we won't care for now, but we might
-  // have to do something about it in the future.
+  // The contents of this node
+  content: Match.Optional(String),
 
-  // The ids and orders of the node that are children of this node
-  children: {
-    type: [Object],
-    defaultValue: [],
-    custom: function() {
-    }
-  },
+  // The time this node was first created
+  createdAt: Date,
 
-  // The content of this node
-  content: {
-    type: String,
-    optional: true // Otherwise, it doesn't allow empty strings
-  },
+  // The time this node was last updated
+  updatedAt: Date,
 
-  createdAt: {
-    type: Date,
-    autoValue: function () {
-      if (this.isInsert) {
-        return new Date();
-      } else if (this.isUpsert) {
-        return {
-          $setOnInsert: new Date()
-        };
-      } else {
-        this.unset();
-      }
-    }
-  },
+  // The user id who first created this node
+  createdBy: String,
 
-  updatedAt: {
-    type: Date,
-    autoValue: function () {
-      return new Date();
-    }
-  },
+  // A list of all user ids that have ever edited this node
+  updatedBy: [String],
 
-  // The user that first created this node
-  createdBy: {
-    type: String,
-    regEx: SimpleSchema.RegEx.Id,
-    denyUpdate: true,
-    autoValue: function () {
-      if (this.isInsert) {
-        if (this.isFromTrustedCode) {
-          return this.value;
-        } else {
-          return this.userId;
-        }
-      } else {
-        this.unset();
-      }
-    }
-  },
+  // The user who is currently editing this node, locking it
+  lockedBy: String,
 
-  // A list of all of the users that have edited this node. When the node is
-  // created, this is an array with the user who created it.
-  updatedBy: {
-    // For some reason, these schema fields still allow an array with null
-    // values, so we have a custom validation function
-    // XXX submit a bug on simpleschema for this
-    type: [String],
-    regEx: SimpleSchema.RegEx.Id,
-    autoValue: function () {
-      var userId;
-
-      if (! this.userId && ! this.value) {
-        return;
-      }
-
-      if (! this.userId) {
-        // When you call this from trusted code, the argument passed in will
-        // be an array
-        userId = this.value[0];
-      } else {
-        userId = this.userId;
-      }
-
-      if (this.isInsert) {
-        return [userId];
-      } else {
-        return {
-          $addToSet: userId
-        };
-      }
-    },
-    custom: function () {
-      var value = this.value;
-
-      if (! _.isArray(value)) {
-        return "expectedArray";
-      }
-
-      if (value.length < 1) {
-        return "minCount";
-      }
-
-      if (! _.all(value, function (item) {
-        return _.isString(item);
-      })) {
-        return "expectedString";
-      }
-    }
-  },
-
-  // The user that is currently editing this node, if any. If nobody is
-  // currently editing this node, this value will be null.
-  lockedBy: {
-    type: String,
-    regEx: SimpleSchema.RegEx.Id,
-    optional: true
-  },
-
-  // An object where the keys are user ids and the value is true. The keys
-  // are the users that have this bullet point collapsed in their view.
-  collapsedBy: {
-    type: Object,
-    blackbox: true,
-    defaultValue: {}
-  }
-});
-
-// Nodes.attachSchema(NodeSchema);
+  // An object where the keys are user ids and the value is true if they have
+  // collapsed this node
+  collapsedBy: Object
+};
