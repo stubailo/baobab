@@ -40,11 +40,17 @@ _.extend(NodeModel.prototype, {
   moveTo: function (newParentNodeId, beforeNodeId) {
     Meteor.call("moveNode", this._id, newParentNodeId, beforeNodeId);
   },
+  isWriteableByUser: function (userId) {
+    return this.permissions.readWrite.indexOf(userId) !== -1;
+  },
+  isReadableByUser: function (userId) {
+    return isWriteableByCurrentUser() ||
+      this.permissions.readOnly.indexOf(userId) !== -1;
+  },
   isWriteableByCurrentUser: function () {
-    return this.permissions.readWrite.indexOf(Meteor.userId()) !== -1;
+    this.isWriteableByUser(Meteor.userId());
   },
   isReadableByCurrentUser: function () {
-    return isWriteableByCurrentUser() ||
-      this.permissions.readOnly.indexOf(Meteor.userId()) !== -1;
+    this.isReadableByUser(Meteor.userId());
   }
 });

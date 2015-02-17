@@ -14,8 +14,11 @@ Package.onUse(function(api) {
   api.versionsFrom('1.0.3.1');
 
   api.addFiles("node-model.js");
+  api.addFiles("node-trusted-api.js");
+  api.addFiles("node-methods.js");
   api.addFiles('nodes.js');
   api.export("Nodes");
+  api.export("NodeTrustedApi");
 
   api.use(["mongo", "check", "underscore"]);
 });
