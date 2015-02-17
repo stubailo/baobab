@@ -169,5 +169,42 @@ NodeTrustedApi = {
         children: { _id: nodeId, order: newNodeOrder }
       }
     });
+  },
+  shareNode: function (nodeId, targetUserId, writeable, userId) {
+    check(nodeId, String);
+    check(targetUserId, String);
+    check(writeable, Boolean);
+    check(userId, String);
+
+    var node = Nodes.findOne(nodeId);
+    var numUpdated;
+
+    if (writeable) {
+      numUpdated = Nodes.update({
+        _id:nodeId,
+        "permissions.readWrite": userId
+      }, {$addToSet: {
+        "permissions.readWrite": targetUserId
+      } });
+
+      if (numUpdated === 0) {
+        throw new Meteor.Error("writeable-sharing-denied");
+      }
+    } else {
+      numUpdated = Nodes.update({
+        _id:nodeId,
+        "permissions.readOnly": userId
+      }, {$addToSet: {
+        "permissions.readOnly": targetUserId
+      } });
+
+      if (numUpdated === 0) {
+        throw new Meteor.Error("readable-sharing-denied");
+      }
+    }
+
+    _.each(node.children, function (child) {
+      NodeTrustedApi.shareNode(child._id, targetUserId, writeable, userId);
+    });
   }
 };

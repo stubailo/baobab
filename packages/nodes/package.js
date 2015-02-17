@@ -17,6 +17,7 @@ Package.onUse(function(api) {
   api.addFiles("node-trusted-api.js");
   api.addFiles("node-methods.js");
   api.addFiles('nodes.js');
+  api.addFiles('node-publish.js');
   api.export("Nodes");
   api.export("NodeTrustedApi");
 
