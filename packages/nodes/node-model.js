@@ -4,7 +4,7 @@ NodeModel = function (nodeDocument) {
 
 _.extend(NodeModel.prototype, {
   getParent: function () {
-    return Nodes.findOne({ "children._id": pointer });
+    return Nodes.findOne({ "children._id": this._id });
   },
   isCollapsedByCurrentUser: function () {
     return this.collapsedBy && this.collapsedBy[Meteor.userId()] === true;

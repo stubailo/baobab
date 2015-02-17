@@ -6,16 +6,16 @@ Nodes = new Mongo.Collection("nodes", {
 
 /**
  * Figure out what the order key needs to be to place an element inside a
- * parent node so that it is right before beforeNode. If beforeNodeId is not
- * passed, generates an order key that is after everything in the list of
+ * parent node so that it is right after previousNode. If previousNodeId is not
+ * passed, generates an order key that is before everything in the list of
  * children.
  * @param  {String} parentNodeId The id of the parent node
- * @param  {String} beforeNodeId The id of the node that should be right after
+ * @param  {String} previousNodeId The id of the node that should be right after
  * the new node; optional if you want to place it at the end of the children
  * @return {Number}              The order key that will place the new node in
  * the desired place among the children
  */
-var calculateNodeOrder = function (parentNodeId, beforeNodeId) {
+var calculateNodeOrder = function (parentNodeId, previousNodeId) {
   if (! parentNodeId) {
     // We are creating the root node, so we don't really care what the order is
     return 0;
@@ -27,11 +27,11 @@ var calculateNodeOrder = function (parentNodeId, beforeNodeId) {
     throw new Meteor.Error("parent-node-not-found");
   }
 
-  if (parentNodeId === beforeNodeId) {
-    throw new Meteor.Error("parent-node-same-as-before-node");
+  if (parentNodeId === previousNodeId) {
+    throw new Meteor.Error("parent-node-same-as-previous-node");
   }
 
-  if (beforeNodeId && ! _.findWhere(parent.children, {_id: beforeNodeId})) {
+  if (previousNodeId && ! _.findWhere(parent.children, {_id: previousNodeId})) {
     throw new Meteor.Error("before-node-not-in-parent");
   }
 
@@ -51,39 +51,39 @@ var calculateNodeOrder = function (parentNodeId, beforeNodeId) {
 
   // Now we are sure that siblings.length > 0, meaning the parent node has at
   // least one child
-  if (! beforeNodeId) {
+  if (! previousNodeId) {
     // Just append it to the end
-    return _.last(siblings).order + randomNumberGreaterThanOne;
+    return _.first(siblings).order - randomNumberGreaterThanOne;
   }
 
-  // Find the child specified by beforeNodeId
-  var beforeSiblingOrder, beforeSiblingIndex = -1;
+  // Find the child specified by previousNodeId
+  var previousSiblingOrder, previousSiblingIndex = -1;
   for (var i = 0; i < siblings.length; i++) {
-    if (siblings[i]._id === beforeNodeId) {
-      beforeSiblingIndex = i;
-      beforeSiblingOrder = siblings[i].order;
+    if (siblings[i]._id === previousNodeId) {
+      previousSiblingIndex = i;
+      previousSiblingOrder = siblings[i].order;
     }
   }
 
-  if (beforeSiblingIndex === 0) {
+  if (previousSiblingIndex === siblings.length - 1) {
     // We are trying to insert before the first child
-    return beforeSiblingOrder - randomNumberGreaterThanOne;
+    return previousSiblingOrder + randomNumberGreaterThanOne;
   }
 
   // At this point, we are in the most complex case - we need to insert a new
   // child between two existing children.
-  var afterSiblingIndex = beforeSiblingIndex - 1;
-  var afterSiblingOrder = siblings[afterSiblingIndex].order;
+  var nextSiblingIndex = previousSiblingIndex + 1;
+  var nextSiblingOrder = siblings[nextSiblingIndex].order;
 
   // We need to generate a random number here so that we don't end up with
   // identical order fields on two nodes inserted between two existing nodes
   // at the same time. This random number needs to be smaller than the
   // difference in the order keys
-  var distance = afterSiblingOrder - beforeSiblingOrder;
+  var distance = nextSiblingOrder - previousSiblingOrder;
   var randomNumberSmallerThanDistance = Random.fraction() * distance / 2 +
     distance / 4;
 
-  return beforeSiblingOrder + randomNumberSmallerThanDistance;
+  return previousSiblingOrder + randomNumberSmallerThanDistance;
 };
 
 // We need this function so that the order is only generated on the client. If
@@ -91,8 +91,8 @@ var calculateNodeOrder = function (parentNodeId, beforeNodeId) {
 // 
 // The order needs to be generated on the client to avoid UI flickering from
 // different orders being generated on the client and server
-Nodes.insertNode = function (content, parentNodeId, beforeNodeId) {
-  var newNodeOrder = calculateNodeOrder(parentNodeId, beforeNodeId);
+Nodes.insertNode = function (content, parentNodeId, previousNodeId) {
+  var newNodeOrder = calculateNodeOrder(parentNodeId, previousNodeId);
   var newID = Random.id();
   Meteor.call("_insertNode", content, newID, parentNodeId, newNodeOrder);
   return newID;
@@ -163,13 +163,13 @@ Meteor.methods({
     Nodes.update(nodeId, {$unset: fieldToUnset});
   },
 
-  moveNode: function (nodeId, newParentNodeId, beforeNodeId) {
+  moveNode: function (nodeId, newParentNodeId, previousNodeId) {
     check(nodeId, String);
     check(newParentNodeId, String);
-    check(beforeNodeId, Match.Optional(String));
+    check(previousNodeId, Match.Optional(String));
 
-    if (nodeId === beforeNodeId) {
-      throw new Meteor.Error("node-same-as-before-node");
+    if (nodeId === previousNodeId) {
+      throw new Meteor.Error("node-same-as-previous-node");
     }
 
     if (nodeId === newParentNodeId) {
@@ -199,7 +199,7 @@ Meteor.methods({
       }
     }
 
-    var newNodeOrder = calculateNodeOrder(newParentNodeId, beforeNodeId);
+    var newNodeOrder = calculateNodeOrder(newParentNodeId, previousNodeId);
 
     // Remove this node from the children array of its parent(s)
     // XXX if we implement multiple parents, this code will remove all of the

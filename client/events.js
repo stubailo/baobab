@@ -12,8 +12,12 @@ Template.node.events({
     return false;
   },
   "keydown input": function (event) {
-    if (event.which === 13) {
+    var node = this;
 
+    if (event.which === 13) {
+      Nodes.insertNode("", node.getParent()._id, node._id);
     }
+
+    event.stopPropagation();
   }
 });
