@@ -6,8 +6,9 @@
 
 meteor-platform
 autopublish
-insecure
 aldeed:simple-schema
 aldeed:collection2
 iron:router
 raix:handlebar-helpers
+nodes
+accounts-password
