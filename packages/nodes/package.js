@@ -15,7 +15,7 @@ Package.onUse(function(api) {
   api.addFiles('nodes.js');
   api.export("Nodes");
 
-  api.use(["aldeed:collection2", "aldeed:simple-schema", "mongo", "accounts-password"]);
+  api.use(["mongo"]);
 });
 
 Package.onTest(function(api) {

@@ -50,6 +50,11 @@ var calculateNodeOrder = function (parentNodeId, beforeNodeId) {
   return newNodeOrder;
 };
 
+// We need this function so that the order is only generated on the client. If
+// you called the method directly, the order would be generated on the server.
+// 
+// The order needs to be generated on the client to avoid UI flickering from
+// different orders being generated on the client and server
 Nodes.insertEmptyNode = function (parentNodeId, beforeNodeId) {
   var newNodeOrder = calculateNodeOrder(parentNodeId, beforeNodeId);
 
@@ -77,6 +82,7 @@ Meteor.methods({
 
     return id;
   },
+
   collapseNode: function (nodeId) {
     if (! this.userId) {
       throw new Meteor.Error("must-be-logged-in");
@@ -87,6 +93,7 @@ Meteor.methods({
 
     Meteor.update(nodeId, {$set: fieldToSet});
   },
+
   unCollapseNode: function (nodeId) {
     if (! this.userId) {
       throw new Meteor.Error("must-be-logged-in");
