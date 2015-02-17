@@ -76,6 +76,28 @@ Meteor.methods({
     Nodes.update(parentNodeId, {$push: {children: newChild}});
 
     return id;
+  },
+  collapseNode: function (nodeId) {
+    if (! this.userId) {
+      throw new Meteor.Error("must-be-logged-in");
+    }
+
+    var fieldToSet = {};
+    fieldToSet["collapsedBy." + this.userId] = true;
+
+    Meteor.update(nodeId, {$set: fieldToSet});
+  },
+  unCollapseNode: function (nodeId) {
+    if (! this.userId) {
+      throw new Meteor.Error("must-be-logged-in");
+    }
+
+    var fieldToUnset = {};
+    // In mongo, we need to make a dictionary with the keys that we want to
+    // unset
+    fieldToUnset["collapsedBy." + this.userId] = true;
+
+    Meteor.update(nodeId, {$unset: fieldToUnset});
   }
 });
 
