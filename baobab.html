@@ -9,30 +9,29 @@
 </body>
 
 <template name="tree">
-  {{#if $neq content null}}
-    <h2>{{content}}</h2>
+  {{#if $eq content null}}
+    <h2>&nbsp;</h2>
+  {{else}}
+    <h2 contentEditable>{{content}}</h2>
   {{/if}}
+  <div class="list">
   {{#each getOrderedChildren}}
     {{> node}}
   {{/each}}
+  </div>
 </template>
 
 <template name="node">
-<div class="node" style="margin-left: {{indent}}px">
-  <span class="arrow"
-        style="visibility:{{#if getLength children}}visible{{else}}hidden{{/if}}">
-    {{#if isCollapsedByCurrentUser}}
-      &#9654;
-    {{else}}
-      &#9660;
-    {{/if}}
-  </span>
-  <input type="text" class="node" value="{{content}}">
-  <a href="/{{_id}}">(zoom)</a>
-  {{#unless isCollapsedByCurrentUser}}
-    {{#each getOrderedChildren}}
-      {{> node}}
-    {{/each}}
-  {{/unless}}
-</div>
+  <div class="item">
+    <a class="zoom" href="/{{_id}}">&mapstoup;</a>
+    <div class="arrow{{getArrowIconClasses}}"></div>
+    <div class="input" contentEditable>{{content}}</div>
+    {{#unless isCollapsedByCurrentUser}}
+      <div class="list">
+      {{#each getOrderedChildren}}
+        {{> node}}
+      {{/each}}
+      </div>
+    {{/unless}}
+  </div>
 </template>

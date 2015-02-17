@@ -6,11 +6,19 @@ _.extend(NodeModel.prototype, {
   getParent: function () {
     return Nodes.findOne({ "children._id": this._id });
   },
+
   isCollapsedByCurrentUser: function () {
-    return this.collapsedBy && this.collapsedBy[Meteor.userId()] === true;
+    return this.hasChildren() &&
+      this.collapsedBy &&
+      this.collapsedBy[Meteor.userId()] === true;
   },
+
+  hasChildren: function() {
+    return !!(this.children && this.children.length > 0);
+  },
+
   getOrderedChildren: function () {
-    if (! this.children || ! this.children.length) {
+    if (! this.hasChildren()) {
       return null;
     }
 
@@ -25,6 +33,32 @@ _.extend(NodeModel.prototype, {
       return childrenById[childRecord._id];
     });
   },
+
+  getArrowIcon: function() {
+    return new Spacebars.SafeString(
+      this.hasChildren()
+        ? this.isCollapsedByCurrentUser()
+          ? "&#9654;" : "&#9660;"
+        : "&bull;"
+    );
+  },
+
+  getArrowIconClasses: function() {
+    if (this.content === null) {
+      return " hidden";
+    }
+
+    if (! this.hasChildren()) {
+      return " childless";
+    }
+
+    if (this.isCollapsedByCurrentUser()) {
+      return " collapsed";
+    }
+
+    return " expanded";
+  },
+
   updateContent: function (newContent) {
     Meteor.call("updateNodeContent", this._id, newContent);
   },

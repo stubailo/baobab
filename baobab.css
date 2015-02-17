@@ -1,1 +1,64 @@
 /* CSS declarations go here */
+
+body {
+  padding: 100px 0 0 10%;
+}
+
+body * {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+.hidden {
+  visibility: hidden;
+}
+
+div.item {
+  position: relative;
+  padding: 0 0 0 20px;
+  width: 80%;
+}
+
+.input {
+  position: relative;
+  left: 30px;
+  outline: 0px solid transparent;
+  border: 0 none;
+  font-size: 12pt;
+  min-height: 1.5em;
+}
+
+.zoom {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  top: 0px;
+  left: 0px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.arrow {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  top: 0px;
+  left: 20px;
+  line-height: 1.5em;
+  cursor: pointer;
+}
+
+.arrow.hidden {
+  background-image: none;
+}
+
+.arrow.childless {
+  background-image: url("/bullet.svg");
+}
+
+.arrow.collapsed {
+  background-image: url("/collapsed.svg");
+}
+
+.arrow.expanded {
+  background-image: url("/expanded.svg");
+}

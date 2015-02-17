@@ -1,5 +1,5 @@
 Template.node.events({
-  "click span.arrow": function(event, template) {
+  "click .arrow": function(event, template) {
     var node = template.data;
     var collapsed = node.isCollapsedByCurrentUser();
 
@@ -11,13 +11,18 @@ Template.node.events({
 
     return false;
   },
-  "keydown input": function (event) {
+
+  // TODONE Display the outline with a <ul>
+  // TODO Support arrow keys.
+
+  "keydown .input": function (event) {
     var node = this;
-
     if (event.which === 13) {
-      Nodes.insertNode("", node.getParent()._id, node._id);
+      if (! event.shiftKey) {
+        Nodes.insertNode("", node.getParent()._id, node._id);
+        // TODO Focus the new node.
+        return false;
+      }
     }
-
-    event.stopPropagation();
   }
 });
