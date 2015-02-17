@@ -6,12 +6,19 @@
   <h1>Baobab</h1>
 </body>
 
+<template name="tree">
+  {{#if body}}
+    <h2>{{body}}</h2>
+  {{/if}}
+  {{#each getRootChildren}}
+    {{> node}}
+  {{/each}}
+</template>
+
 <template name="node">
 <div class="node" style="margin-left: {{indent}}px">
-  {{#if body}}
-    <a href="/{{_id}}">*</a>
-    <input type="text" class="node" value="{{body}}">
-  {{/if}}
+  <a href="/{{_id}}">&bullet;</a>
+  <input type="text" class="node" value="{{body}}">
   {{#each children}}
     {{> node}}
   {{/each}}
