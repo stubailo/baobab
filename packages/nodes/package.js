@@ -15,7 +15,7 @@ Package.onUse(function(api) {
   api.addFiles('nodes.js');
   api.export("Nodes");
 
-  api.use(["mongo"]);
+  api.use(["mongo", "check"]);
 });
 
 Package.onTest(function(api) {
