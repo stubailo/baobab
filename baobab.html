@@ -7,20 +7,30 @@
 </body>
 
 <template name="tree">
-  {{#if $neq body null}}
-    <h2>{{body}}</h2>
+  {{#if $neq content null}}
+    <h2>{{content}}</h2>
   {{/if}}
-  {{#each children}}
+  {{#each getChildren}}
     {{> node}}
   {{/each}}
 </template>
 
 <template name="node">
 <div class="node" style="margin-left: {{indent}}px">
-  <a href="/{{_id}}">&bullet;</a>
-  <input type="text" class="node" value="{{body}}">
-  {{#each children}}
-    {{> node}}
-  {{/each}}
+  <span class="arrow"
+        style="visibility:{{#if getLength children}}visible{{else}}hidden{{/if}}">
+    {{#if collapsed}}
+      &#9654;
+    {{else}}
+      &#9660;
+    {{/if}}
+  </span>
+  <input type="text" class="node" value="{{content}}">
+  <a href="/{{_id}}">(zoom)</a>
+  {{#unless collapsed}}
+    {{#each getChildren}}
+      {{> node}}
+    {{/each}}
+  {{/unless}}
 </div>
 </template>

@@ -1,6 +1,6 @@
 function getChildren () {
-  return this.children ? NodesLocal.find({
-    _id: {$in: this.children}
+  return this.children ? Nodes.find({
+    _id: {$in: _.pluck(this.children, "_id")}
   }) : [];
 }
 
@@ -9,9 +9,14 @@ Template.node.helpers({
     return 20;
   },
 
-  children: getChildren
+  collapsed: function() {
+    return this.collapsedBy &&
+      this.collapsedBy[Meteor.userId()] === true;
+  },
+
+  getChildren: getChildren
 });
 
 Template.tree.helpers({
-  children: getChildren
+  getChildren: getChildren
 });

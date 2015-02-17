@@ -2,6 +2,9 @@ Nodes = new Mongo.Collection("nodes");
 
 var calculateNodeOrder = function (parentNodeId, beforeNodeId) {
   var parent = Nodes.findOne(parentNodeId);
+  if (! parent) {
+    return 0;
+  }
   var siblings = _.sortBy(parent.children, "order");
 
   var newNodeOrder;
@@ -55,17 +58,19 @@ var calculateNodeOrder = function (parentNodeId, beforeNodeId) {
 // 
 // The order needs to be generated on the client to avoid UI flickering from
 // different orders being generated on the client and server
-Nodes.insertEmptyNode = function (parentNodeId, beforeNodeId) {
+Nodes.insertNode = function (content, parentNodeId, beforeNodeId) {
   var newNodeOrder = calculateNodeOrder(parentNodeId, beforeNodeId);
-
-  Meteor.call("_insertEmptyNode", parentNodeId, newNodeOrder);
+  var newID = Random.id();
+  return Meteor.call("_insertNode", content, newID, parentNodeId, newNodeOrder);
 };
 
 Meteor.methods({
-  // Call Nodes.insertEmptyNode instead
-  _insertEmptyNode: function (parentNodeId, order) {
-    var id = Nodes.insert({
-      content: "",
+  // Call Nodes.insertNode instead
+  _insertNode: function (content, newID, parentNodeId, order) {
+    Nodes.insert({
+      _id: newID,
+      content: content,
+      children: [],
       createdBy: this.userId,
       updatedBy: [this.userId]
     });
@@ -73,14 +78,14 @@ Meteor.methods({
     // All of the code below is for updating the parent, if this node doesn't
     // have a parent then return
     if (! parentNodeId) {
-      return;
+      return newID;
     }
 
-    var newChild = {order: order, _id: id};
+    var newChild = {order: order, _id: newID};
 
     Nodes.update(parentNodeId, {$push: {children: newChild}});
 
-    return id;
+    return newID;
   },
 
   collapseNode: function (nodeId) {
@@ -91,7 +96,7 @@ Meteor.methods({
     var fieldToSet = {};
     fieldToSet["collapsedBy." + this.userId] = true;
 
-    Meteor.update(nodeId, {$set: fieldToSet});
+    Nodes.update(nodeId, {$set: fieldToSet});
   },
 
   unCollapseNode: function (nodeId) {
@@ -104,7 +109,7 @@ Meteor.methods({
     // unset
     fieldToUnset["collapsedBy." + this.userId] = true;
 
-    Meteor.update(nodeId, {$unset: fieldToUnset});
+    Nodes.update(nodeId, {$unset: fieldToUnset});
   }
 });
 
