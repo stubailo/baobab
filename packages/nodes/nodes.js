@@ -1,4 +1,8 @@
-Nodes = new Mongo.Collection("nodes");
+Nodes = new Mongo.Collection("nodes", {
+  transform: function (nodeDocument) {
+    return new NodeModel(nodeDocument);
+  }
+});
 
 /**
  * Figure out what the order key needs to be to place an element inside a
@@ -149,7 +153,7 @@ Meteor.methods({
     Nodes.update(nodeId, {$set: fieldToSet});
   },
 
-  unCollapseNode: function (nodeId) {
+  expandNode: function (nodeId) {
     var fieldToUnset = {};
     // In mongo, we need to make a dictionary with the keys that we want to
     // unset
