@@ -53,11 +53,12 @@ var calculateNodeOrder = function (parentNodeId, beforeNodeId) {
 Nodes.insertEmptyNode = function (parentNodeId, beforeNodeId) {
   var newNodeOrder = calculateNodeOrder(parentNodeId, beforeNodeId);
 
-  Meteor.call("insertEmptyNode", parentNodeId, newNodeOrder);
+  Meteor.call("_insertEmptyNode", parentNodeId, newNodeOrder);
 };
 
 Meteor.methods({
-  insertEmptyNode: function (parentNodeId, order) {
+  // Call Nodes.insertEmptyNode instead
+  _insertEmptyNode: function (parentNodeId, order) {
     var id = Nodes.insert({
       content: "",
       createdBy: this.userId,
