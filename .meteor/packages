@@ -10,3 +10,5 @@ iron:router
 raix:handlebar-helpers
 nodes
 accounts-password
+insecure
+accounts-ui

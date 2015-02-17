@@ -1,7 +1,12 @@
 function getChildren () {
-  return this.children ? Nodes.find({
-    _id: {$in: _.pluck(this.children, "_id")}
-  }) : [];
+  if (! this.children) {
+    return null;
+  }
+
+  var children = _.sortBy(this.children, "order");
+  return _.map(children, function (child) {
+    return Nodes.findOne(child._id);
+  });
 }
 
 Template.node.helpers({
