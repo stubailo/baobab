@@ -101,8 +101,9 @@ Nodes.insertNode = function (content, parentNodeId, previousNodeId) {
 Meteor.methods({
   // Call Nodes.insertNode instead of calling this method directly.
   _insertNode: function (content, newID, parentNodeId, order) {
+    var parent;
     if (parentNodeId) {
-      var parent = Nodes.findOne(parentNodeId);
+      parent = Nodes.findOne(parentNodeId);
       if (! parent.isWriteableByCurrentUser()) {
         throw new Meteor.Error("parent-permission-denied");
       }
@@ -117,10 +118,7 @@ Meteor.methods({
       createdAt: new Date(),
       updatedAt: new Date(),
       collapsedBy: {},
-      permissions: {
-        readWrite: [this.userId],
-        readOnly: []
-      }
+      permissions: parent.permissions
     };
 
     check(newNode, Nodes.matchPattern);
