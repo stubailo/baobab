@@ -26,7 +26,12 @@ Meteor.methods({
   updateNodeContent: function (nodeId, newContent) {
     NodeTrustedApi.updateNodeContent(nodeId, newContent, this.userId);
   },
-  shareNode: function (nodeId, targetUserId, writeable) {
-    NodeTrustedApi.shareNode(nodeId, targetUserId, writeable, this.userId);
+
+  shareNode: function (nodeId, targetUserEmail, writeable) {
+    NodeTrustedApi.shareNode(nodeId, targetUserEmail, writeable, this.userId);
+  },
+
+  shareNodeToPublicUrl: function (nodeId, token, writeable) {
+    NodeTrustedApi.shareNodeToPublicUrl(nodeId, token, writeable, this.userId);
   }
 });

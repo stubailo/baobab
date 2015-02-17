@@ -174,5 +174,11 @@ _.extend(NodeModel.prototype, {
   },
   isReadableByCurrentUser: function () {
     this.isReadableByUser(Meteor.userId());
+  },
+  generateShareUrl: function (writeable) {
+    var token = Random.id();
+    Meteor.call("shareNodeToPublicUrl", this._id, token, writeable);
+
+    return Meteor.absoluteUrl(this._id + "?token=" + token);
   }
 });

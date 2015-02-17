@@ -170,12 +170,49 @@ NodeTrustedApi = {
       }
     });
   },
-  shareNode: function (nodeId, targetUserId, writeable, userId) {
+
+  shareNode: function (nodeId, targetUserEmail, writeable, userId) {
     check(nodeId, String);
-    check(targetUserId, String);
+    check(targetUserEmail, String);
     check(writeable, Boolean);
     check(userId, String);
 
+    var targetUser = Meteor.users.findOne({
+      "emails.address": targetUserEmail
+    });
+
+    var targetUserId;
+    if (targetUser) {
+      targetUserId = targetUser._id;
+    } else {
+      if (Meteor.isClient) {
+        // We can't simulate sending an email
+        return;
+      }
+
+      // If we are trying to share with someone who doesn't have an account yet,
+      // then create the user and send them an enrollment email.
+      targetUserId = Accounts.createUser({
+        email: targetUserEmail,
+        password: Random.id()
+      });
+
+      Accounts.sendEnrollmentEmail(targetUserId);
+    }
+
+    NodeTrustedApi._shareNodeToId(nodeId, targetUserId, writeable, userId);
+  },
+
+  shareNodeToPublicUrl: function (nodeId, token, writeable, userId) {
+    check(nodeId, String);
+    check(token, String);
+    check(writeable, Boolean);
+    check(userId, String);
+
+    NodeTrustedApi._shareNodeToId(nodeId, token, writeable, userId);
+  },
+
+  _shareNodeToId: function (nodeId, targetUserId, writeable, userId) {
     var node = Nodes.findOne(nodeId);
     var numUpdated;
 

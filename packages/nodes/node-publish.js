@@ -7,6 +7,15 @@ if (Meteor.isServer) {
       ]
     });
   });
+
+  Meteor.publish('nodesTokenAuth', function (token) {
+    return Nodes.find({
+      $or: [
+        {"permissions.readWrite": token},
+        {"permissions.readOnly": token}
+      ]
+    });
+  });
 }
 
 if (Meteor.isClient) {
