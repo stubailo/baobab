@@ -6,15 +6,12 @@
   <h1>Baobab</h1>
 </body>
 
-<template name="tree">
-  {{#each rootNodes}}
-    {{> node }}
-  {{/each}}
-</template>
-
-<template name = "node">
+<template name="node">
 <div class="node" style="margin-left: {{indent}}px">
-  <input type="text" class="node" value="{{body}}">
+  {{#if body}}
+    <a href="/{{_id}}">*</a>
+    <input type="text" class="node" value="{{body}}">
+  {{/if}}
   {{#each children}}
     {{> node}}
   {{/each}}
