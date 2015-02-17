@@ -39,5 +39,12 @@ _.extend(NodeModel.prototype, {
   },
   moveTo: function (newParentNodeId, beforeNodeId) {
     Meteor.call("moveNode", this._id, newParentNodeId, beforeNodeId);
+  },
+  isWriteableByCurrentUser: function () {
+    return this.permissions.readWrite.indexOf(Meteor.userId()) !== -1;
+  },
+  isReadableByCurrentUser: function () {
+    return isWriteableByCurrentUser() ||
+      this.permissions.readOnly.indexOf(Meteor.userId()) !== -1;
   }
 });

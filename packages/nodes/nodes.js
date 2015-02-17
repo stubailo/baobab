@@ -99,8 +99,15 @@ Nodes.insertNode = function (content, parentNodeId, previousNodeId) {
 };
 
 Meteor.methods({
-  // Call Nodes.insertNode instead
+  // Call Nodes.insertNode instead of calling this method directly.
   _insertNode: function (content, newID, parentNodeId, order) {
+    if (parentNodeId) {
+      var parent = Nodes.findOne(parentNodeId);
+      if (! parent.isWriteableByCurrentUser()) {
+        throw new Meteor.Error("parent-permission-denied");
+      }
+    }
+
     var newNode = {
       _id: newID,
       content: content,
@@ -109,7 +116,11 @@ Meteor.methods({
       updatedBy: [this.userId],
       createdAt: new Date(),
       updatedAt: new Date(),
-      collapsedBy: {}
+      collapsedBy: {},
+      permissions: {
+        readWrite: [this.userId],
+        readOnly: []
+      }
     };
 
     check(newNode, Nodes.matchPattern);
@@ -132,6 +143,18 @@ Meteor.methods({
   removeNode: function (nodeId) {
     check(nodeId, String);
 
+    // Remove the node from the database
+    var numRemoved = Nodes.remove({
+      _id: nodeId,
+      "permissions.readWrite": this.userId
+    });
+
+    // Technically, this error can happen for two reasons - the node doesn't
+    // exist, or you don't have permission to remove it
+    if (numRemoved === 0) {
+      throw new Meteor.Error("remove-failed");
+    }
+
     // Remove this node from the children array of its parent(s)
     Nodes.update({}, { $pull: { children: {_id: nodeId}}}, { multi: true });
 
@@ -142,9 +165,6 @@ Meteor.methods({
     _.each(node.children, function (child) {
       Meteor.call("removeNode", child._id);
     });
-
-    // Remove the node from the database
-    Nodes.remove(nodeId);
   },
 
   collapseNode: function (nodeId) {
@@ -163,6 +183,8 @@ Meteor.methods({
     Nodes.update(nodeId, {$unset: fieldToUnset});
   },
 
+  // XXX this operation is not atomic, subject to race conditions
+  // XXX can be optimized to make fewer database queries
   moveNode: function (nodeId, newParentNodeId, previousNodeId) {
     check(nodeId, String);
     check(newParentNodeId, String);
@@ -180,15 +202,15 @@ Meteor.methods({
     // not one of its ancestors. Otherwise, we would end up with a closed cycle.
     // XXX if you have multiple parents, this check becomes very hard
     var pointer = newParentNodeId;
-    var parent;
+    var tempParent;
 
     // Run this loop until we break because we didn't find a parent so we are at
     // the top of the tree
     while (true) {
-      parent = Nodes.findOne({ "children._id": pointer });
+      tempParent = Nodes.findOne({ "children._id": pointer });
 
-      if (parent) {
-        pointer = parent._id;
+      if (tempParent) {
+        pointer = tempParent._id;
         if (pointer === nodeId) {
           // One of the new parent's ancestors is the node we are trying to move
           throw new Meteor.Error("cycle-not-allowed");
@@ -197,6 +219,18 @@ Meteor.methods({
         // We reached the end
         break;
       }
+    }
+
+    // Make sure we have permissions to write to both the new parent and
+    // the node we are moving
+    var node = Nodes.findOne(nodeId);
+    if (! node.isWriteableByCurrentUser()) {
+      throw new Meteor.Error("node-permission-denied");
+    } 
+
+    var parent = node.getParent();
+    if (! parent.isWriteableByCurrentUser()) {
+      throw new Meteor.Error("parent-permission-denied");
     }
 
     var newNodeOrder = calculateNodeOrder(newParentNodeId, previousNodeId);
@@ -217,7 +251,10 @@ Meteor.methods({
   updateNodeContent: function (nodeId, newContent) {
     check(newContent, String);
 
-    Nodes.update(nodeId, {
+    var updated = Nodes.update({
+      _id: nodeId,
+      "permissions.readWrite": this.userId
+    }, {
       $set: {
         content: newContent,
         updatedAt: new Date()
@@ -226,6 +263,10 @@ Meteor.methods({
         updatedBy: this.userId
       }
     });
+
+    if (updated === 0) {
+      throw new Meteor.Error("permission-denied");
+    }
   }
 });
 
@@ -255,5 +296,10 @@ Nodes.matchPattern = {
 
   // An object where the keys are user ids and the value is true if they have
   // collapsed this node
-  collapsedBy: Object
+  collapsedBy: Object,
+
+  permissions: {
+    readOnly: [String], // ids of users that can only read but not write this node
+    readWrite: [String] // ids of users that can read and write this node
+  }
 };
