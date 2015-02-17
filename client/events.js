@@ -1,13 +1,19 @@
 Template.node.events({
   "click span.arrow": function(event, template) {
-    var collapsed = template.data.collapsedBy &&
-      template.data.collapsedBy[Meteor.userId()] === true;
-    
-    Meteor.call(
-      collapsed ? "unCollapseNode" : "collapseNode",
-      template.data._id
-    );
+    var node = template.data;
+    var collapsed = node.isCollapsedByCurrentUser();
+
+    if (collapsed) {
+      node.expand();
+    } else {
+      node.collapse();
+    }
 
     return false;
+  },
+  "keydown input": function (event) {
+    if (event.which === 13) {
+
+    }
   }
 });

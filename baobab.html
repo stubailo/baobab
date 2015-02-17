@@ -12,7 +12,7 @@
   {{#if $neq content null}}
     <h2>{{content}}</h2>
   {{/if}}
-  {{#each getChildren}}
+  {{#each getOrderedChildren}}
     {{> node}}
   {{/each}}
 </template>
@@ -21,7 +21,7 @@
 <div class="node" style="margin-left: {{indent}}px">
   <span class="arrow"
         style="visibility:{{#if getLength children}}visible{{else}}hidden{{/if}}">
-    {{#if collapsed}}
+    {{#if isCollapsedByCurrentUser}}
       &#9654;
     {{else}}
       &#9660;
@@ -29,8 +29,8 @@
   </span>
   <input type="text" class="node" value="{{content}}">
   <a href="/{{_id}}">(zoom)</a>
-  {{#unless collapsed}}
-    {{#each getChildren}}
+  {{#unless isCollapsedByCurrentUser}}
+    {{#each getOrderedChildren}}
       {{> node}}
     {{/each}}
   {{/unless}}

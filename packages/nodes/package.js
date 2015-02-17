@@ -12,12 +12,12 @@ Package.describe({
 
 Package.onUse(function(api) {
   api.versionsFrom('1.0.3.1');
-  
+
   api.addFiles("node-model.js");
   api.addFiles('nodes.js');
   api.export("Nodes");
 
-  api.use(["mongo", "check"]);
+  api.use(["mongo", "check", "underscore"]);
 });
 
 Package.onTest(function(api) {

@@ -94,7 +94,8 @@ var calculateNodeOrder = function (parentNodeId, beforeNodeId) {
 Nodes.insertNode = function (content, parentNodeId, beforeNodeId) {
   var newNodeOrder = calculateNodeOrder(parentNodeId, beforeNodeId);
   var newID = Random.id();
-  return Meteor.call("_insertNode", content, newID, parentNodeId, newNodeOrder);
+  Meteor.call("_insertNode", content, newID, parentNodeId, newNodeOrder);
+  return newID;
 };
 
 Meteor.methods({
@@ -235,7 +236,7 @@ Nodes.matchPattern = {
   children: [{_id: String, order: Number}],
 
   // The contents of this node
-  content: Match.Optional(String),
+  content: Match.OneOf(String, null),
 
   // The time this node was first created
   createdAt: Date,
