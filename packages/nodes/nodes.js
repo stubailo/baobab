@@ -5,7 +5,6 @@ var calculateNodeOrder = function (parentNodeId, beforeNodeId) {
   var siblings = _.sortBy(parent.children, "order");
 
   var newNodeOrder;
-
   if (siblings.length === 0) {
     newNodeOrder = 0;
   } else if (siblings.length === 1) {
@@ -19,26 +18,31 @@ var calculateNodeOrder = function (parentNodeId, beforeNodeId) {
       newNodeOrder = existingNode.order + 1;
     }
   } else if (siblings.length > 1) {
-    var afterSiblingOrder, afterSiblingIndex;
-    for (var i = 0; i < siblings.length; i++) {
-      if (siblings[i]._id === beforeNodeId) {
-        afterSiblingIndex = i;
-        afterSiblingOrder = siblings[i].order;
+    if (! beforeNodeId) {
+      // Just append it to the end
+      newNodeOrder = _.last(siblings).order + 1;
+    } else {
+      var afterSiblingOrder, afterSiblingIndex;
+      for (var i = 0; i < siblings.length; i++) {
+        if (siblings[i]._id === beforeNodeId) {
+          afterSiblingIndex = i;
+          afterSiblingOrder = siblings[i].order;
+        }
       }
+
+      var beforeSiblingIndex = afterSiblingIndex - 1;
+      var beforeSiblingOrder = siblings[beforeSiblingIndex].order;
+
+      // We need to generate a random number here so that we don't end up with
+      // identical order fields on two nodes inserted between two existing nodes
+      // at the same time. This random number needs to be smaller than the
+      // difference in the order keys
+      var distance = afterSiblingOrder - beforeSiblingOrder;
+      var randomNumberSmallerThanDistance = Random.fraction() * distance / 2 +
+        distance / 4;
+
+      newNodeOrder = beforeSiblingOrder + randomNumberSmallerThanDistance;
     }
-
-    var beforeSiblingIndex = afterSiblingIndex - 1;
-    var beforeSiblingOrder = siblings[beforeSiblingIndex].order;
-
-    // We need to generate a random number here so that we don't end up with
-    // identical order fields on two nodes inserted between two existing nodes
-    // at the same time. This random number needs to be smaller than the
-    // difference in the order keys
-    var distance = afterSiblingOrder - beforeSiblingOrder;
-    var randomNumberSmallerThanDistance = Random.fraction() * distance / 2 +
-      distance / 4;
-
-    newNodeOrder = beforeSiblingOrder + randomNumberSmallerThanDistance;
   } else {
     throw new Error("we missed a case here");
   }
@@ -46,8 +50,14 @@ var calculateNodeOrder = function (parentNodeId, beforeNodeId) {
   return newNodeOrder;
 };
 
+Nodes.insertEmptyNode = function (parentNodeId, beforeNodeId) {
+  var newNodeOrder = calculateNodeOrder(parentNodeId, beforeNodeId);
+
+  Meteor.call("insertEmptyNode", parentNodeId, newNodeOrder);
+};
+
 Meteor.methods({
-  insertEmptyNode: function (parentNodeId, beforeNodeId) {
+  insertEmptyNode: function (parentNodeId, order) {
     var id = Nodes.insert({
       content: "",
       createdBy: this.userId,
@@ -60,9 +70,8 @@ Meteor.methods({
       return;
     }
 
-    var newNodeOrder = calculateNodeOrder(parentNodeId, beforeNodeId);
+    var newChild = {order: order, _id: id};
 
-    var newChild = {order: newNodeOrder, _id: id};
     Nodes.update(parentNodeId, {$push: {children: newChild}});
 
     return id;
@@ -78,13 +87,16 @@ NodeSchema = new SimpleSchema({
 
   // The ids and orders of the node that are children of this node
   children: {
-    type: [{_id: String, order: Number}],
-    defaultValue: []
+    type: [Object],
+    defaultValue: [],
+    custom: function() {
+    }
   },
 
   // The content of this node
   content: {
-    type: String
+    type: String,
+    optional: true // Otherwise, it doesn't allow empty strings
   },
 
   createdAt: {
@@ -115,10 +127,14 @@ NodeSchema = new SimpleSchema({
     regEx: SimpleSchema.RegEx.Id,
     denyUpdate: true,
     autoValue: function () {
-      if (this.isFromTrustedCode) {
-        return this.value;
+      if (this.isInsert) {
+        if (this.isFromTrustedCode) {
+          return this.value;
+        } else {
+          return this.userId;
+        }
       } else {
-        return this.userId;
+        this.unset();
       }
     }
   },
@@ -134,7 +150,11 @@ NodeSchema = new SimpleSchema({
     autoValue: function () {
       var userId;
 
-      if (this.isFromTrustedCode) {
+      if (! this.userId && ! this.value) {
+        return;
+      }
+
+      if (! this.userId) {
         // When you call this from trusted code, the argument passed in will
         // be an array
         userId = this.value[0];
@@ -186,4 +206,4 @@ NodeSchema = new SimpleSchema({
   }
 });
 
-Nodes.attachSchema(NodeSchema);
+// Nodes.attachSchema(NodeSchema);
