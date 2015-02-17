@@ -7,7 +7,7 @@
 </body>
 
 <template name="tree">
-  {{#if body}}
+  {{#if $neq body null}}
     <h2>{{body}}</h2>
   {{/if}}
   {{#each children}}
