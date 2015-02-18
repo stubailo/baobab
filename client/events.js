@@ -30,10 +30,17 @@ Template.node.events({
     return false;
   },
 
-  "keydown .input": function (event, template) {
+  "keydown .input": function (event) {
     var node = this;
+    var input = event.target;
 
-    if (event.which === 13) {
+    var updateText = _.debounce(function(node, input) {
+      node.updateContent(input.innerText);
+    }, 200);
+
+    updateText(node, input);
+
+    if (event.which === 13) { // enter
       if (! event.shiftKey) {
         var newNodeID = Nodes.insertNode(
           "", node.getParent()._id, node._id);
@@ -42,7 +49,6 @@ Template.node.events({
       }
 
     } else if (event.which === 38) { // up arrow
-      var node = template.data;
       while (node) {
         var pn = node.getPrecedingNode();
         if (pn && pn.isVisible()) {
@@ -54,7 +60,6 @@ Template.node.events({
       }
 
     } else if (event.which === 40) { // down arrow
-      var node = template.data;
       while (node) {
         var fn = node.getFollowingNode();
         if (fn && fn.isVisible()) {
@@ -63,6 +68,59 @@ Template.node.events({
           return false;
         }
         node = fn;
+      }
+
+    } else if (event.which === 8) { // delete
+      var selection = window.getSelection();
+      if (selection.rangeCount === 1) {
+        var range = selection.getRangeAt(0);
+        var container = range.startContainer;
+        if (range.endContainer === container &&
+            range.startOffset === 0 &&
+            range.endOffset === 0) {
+          while (container) {
+            if (container === input) {
+              var ps = node.getPreviousSibling();
+              if (ps && ps.children.length === 0) {
+
+                if (_.has(templatesByNodeID, ps._id)) {
+                  var prevInput = templatesByNodeID[ps._id].find(".input");
+                  var dummySpan = document.createElement("span");
+                  var dummyID = dummySpan.id = Random.id();
+
+                  prevInput.appendChild(dummySpan);
+                  while (input.firstChild) {
+                    prevInput.appendChild(input.firstChild);
+                  }
+
+                  node.remove();
+                  focusedNode = ps;
+                  selection.collapse(dummySpan, 0);
+                  prevInput.removeChild(dummySpan);
+
+                  updateText(ps, prevInput);
+
+                } else {
+                  node.remove();
+                  focusedNode = ps;
+                  refocus();
+                }
+
+              } else if (!node.content.match(/\S/)) {
+                var pn = node.getPrecedingNode();
+                if (pn) {
+                  focusedNode = pn;
+                  node.remove();
+                  refocus();
+                }
+              }
+
+              return false;
+            }
+
+            container = container.parentNode;
+          }
+        }
       }
     }
   }
