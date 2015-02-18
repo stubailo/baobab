@@ -42,9 +42,25 @@ Template.node.events({
 
     if (event.which === 13) { // enter
       if (! event.shiftKey) {
+        var content = "";
+
+        var selection = window.getSelection();
+        if (selection.rangeCount === 1) {
+          var range = selection.getRangeAt(0);
+          range.deleteContents();
+          var dummyDiv = document.createElement("div");
+          range.insertNode(dummyDiv);
+          while (dummyDiv.nextSibling) {
+            dummyDiv.appendChild(dummyDiv.nextSibling);
+          }
+          content = dummyDiv.innerText;
+          dummyDiv.parentNode.removeChild(dummyDiv);
+        }
+
         var newNodeID = Nodes.insertNode(
-          "", node.getParent()._id, node._id);
+          content, node.getParent()._id, node._id);
         focusedNode = Nodes.findOne(newNodeID);
+
         return false;
       }
 
