@@ -252,8 +252,6 @@ NodeTrustedApi = {
           modifier.$pullAll["permissions.readWrite"] = readWritePermsToRemove;
         }
 
-        console.log(modifier);
-
         // Pull the trigger
         applyToNodeRecusively(node, modifier);
       }
