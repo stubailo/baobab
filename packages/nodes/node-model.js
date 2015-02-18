@@ -8,13 +8,110 @@ _.extend(NodeModel.prototype, {
   },
 
   isCollapsedByCurrentUser: function () {
-    return this.hasChildren() &&
-      this.collapsedBy &&
+    return this.collapsedBy &&
       this.collapsedBy[Meteor.userId()] === true;
+  },
+
+  // A node is visible if none of its ancestors are collapsed.
+  isVisible: function() {
+    var parent = this.getParent();
+    if (parent) {
+      if (parent.isCollapsedByCurrentUser()) {
+        return false;
+      }
+      return parent.isVisible();
+    }
+    return true;
   },
 
   hasChildren: function() {
     return !!(this.children && this.children.length > 0);
+  },
+
+  getPreviousSibling: function() {
+    var parent = this.getParent();
+    return parent ? this._prevSiblingHelper(
+      this._id,
+      parent.getOrderedChildren()
+    ) : null;
+  },
+
+  getNextSibling: function() {
+    var parent = this.getParent();
+    return parent ? this._prevSiblingHelper(
+      this._id,
+      parent.getOrderedChildren().reverse()
+    ) : null;
+  },
+
+  _prevSiblingHelper: function(nodeID, children) {
+    var previousSiblingID;
+
+    _.some(children, function(child) {
+      if (child._id === nodeID) {
+        return true;
+      }
+      previousSiblingID = child._id;
+      return false;
+    });
+
+    if (! previousSiblingID) {
+      return null;
+    }
+
+    return Nodes.findOne(previousSiblingID);
+  },
+
+  getFirstChild: function() {
+    var firstChild = _.min(this.children, function(child) {
+      return child.order;
+    });
+    return firstChild ? Nodes.findOne(firstChild._id) : null;
+  },
+
+  getLastChild: function() {
+    var lastChild = _.max(this.children, function(child) {
+      return child.order;
+    });
+    return lastChild ? Nodes.findOne(lastChild._id) : null;
+  },
+
+  getPrecedingNode: function() {
+    var pn = this.getPreviousSibling();
+
+    while (pn) {
+      var lastChild = pn.getLastChild();
+      if (lastChild) {
+        pn = lastChild;
+      } else {
+        return pn;
+      }
+    }
+
+    return this.getParent();
+  },
+
+  getFollowingNode: function() {
+    var firstChild = this.getFirstChild();
+    if (firstChild) {
+      return firstChild;
+    }
+
+    var nextSibling = this.getNextSibling();
+    if (nextSibling) {
+      return nextSibling;
+    }
+
+    var parent = this.getParent();
+    while (parent) {
+      var uncle = parent.getNextSibling();
+      if (uncle) {
+        return uncle;
+      }
+      parent = parent.getParent();
+    }
+
+    return null;
   },
 
   getOrderedChildren: function () {
