@@ -50,6 +50,7 @@ NodeTrustedApi = {
   },
   removeNode: function (nodeId, userId) {
     check(nodeId, String);
+    var node = Nodes.findOne(nodeId);
 
     // Remove the node from the database
     var numRemoved = Nodes.remove({
@@ -69,7 +70,6 @@ NodeTrustedApi = {
     // Remove all of this node's children
     // XXX if we implement multiple parents, this code will delete too many
     // nodes sometimes
-    var node = Nodes.findOne(nodeId);
     _.each(node.children, function (child) {
       Meteor.call("removeNode", child._id);
     });
