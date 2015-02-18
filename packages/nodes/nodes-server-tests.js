@@ -63,3 +63,35 @@ Tinytest.add('insertNode', function (test) {
 
   test.equal(content.join(""), "abcfde");
 });
+
+Tinytest.add('removeNode', function (test) {
+  var userId = Accounts.createUser({
+    username: Random.id(),
+    password: "test"
+  });
+
+  Nodes.remove({});
+
+  var rootId = createTestTree({
+    content: "a",
+    children: [
+      { content: "b" },
+      { content: "c" },
+      { content: "f",
+        children: [
+          { content: "d" },
+          { content: "e" }
+        ]
+      }
+    ]
+  }, userId);
+
+  // We started with 6 nodes
+  test.equal(Nodes.find().count(), 6);
+
+  var fNodeId = Nodes.findOne(rootId).getOrderedChildren()[2]._id;
+  NodeTrustedApi.removeNode(fNodeId, userId);
+
+  // The whole subtree should be removed, leaving us with 3 nodes
+  test.equal(Nodes.find().count(), 3);
+});

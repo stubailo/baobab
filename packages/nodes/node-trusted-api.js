@@ -78,6 +78,8 @@ NodeTrustedApi = {
   },
   removeNode: function (nodeId, userId) {
     check(nodeId, String);
+    check(userId, String);
+
     var node = Nodes.findOne(nodeId);
 
     // Remove the node from the database
@@ -99,7 +101,7 @@ NodeTrustedApi = {
     // XXX if we implement multiple parents, this code will delete too many
     // nodes sometimes
     _.each(node.children, function (child) {
-      Meteor.call("removeNode", child._id);
+      NodeTrustedApi.removeNode(child._id, userId);
     });
   },
   collapseNode: function (nodeId, userId) {
