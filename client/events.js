@@ -76,11 +76,17 @@ function refocus() {
 }
 
 Template.node.rendered = function() {
-  if (! this.data) {
+  var node = this.data;
+  if (! node) {
     return;
   }
 
-  var nodeID = this.data._id;
+  var initialContent = this.find(".initialContent");
+  var content = initialContent.innerText;
+  initialContent.innerHTML = "";
+  this.find(".input").innerText = content;
+
+  var nodeID = node._id;
   templatesByNodeID[nodeID] = this;
   refocus();
 };
