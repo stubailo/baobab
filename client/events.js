@@ -35,7 +35,7 @@ Template.node.events({
     var input = event.target;
 
     var updateText = _.debounce(function(node, input) {
-      node.updateContent(input.innerText);
+      node.updateContent(input.textContent);
     }, 200);
 
     updateText(node, input);
@@ -53,7 +53,7 @@ Template.node.events({
           while (dummyDiv.nextSibling) {
             dummyDiv.appendChild(dummyDiv.nextSibling);
           }
-          content = dummyDiv.innerText;
+          content = dummyDiv.textContent;
           dummyDiv.parentNode.removeChild(dummyDiv);
         }
 
@@ -153,7 +153,7 @@ Template.node.rendered = function() {
     return;
   }
 
-  this.find(".input").innerText = node.content;
+  this.find(".input").textContent = node.content;
 
   var nodeID = node._id;
   templatesByNodeID[nodeID] = this;
