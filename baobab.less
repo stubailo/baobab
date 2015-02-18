@@ -70,8 +70,9 @@ div.item:first-of-type .item  {
   background-image: none;
 }
 
-.arrow.childless {
-  background-image: url("/bullet.svg");
+.arrow.childless:before {
+  content: "\2022";
+  font-size: 2em;
 }
 
 .arrow.collapsed:before {
