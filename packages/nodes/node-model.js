@@ -163,11 +163,11 @@ _.extend(NodeModel.prototype, {
     Meteor.call("moveNode", this._id, newParentNodeId, beforeNodeId);
   },
   isWriteableByUser: function (userId) {
-    return this.permissions.readWrite.indexOf(userId) !== -1;
+    return !! _.findWhere(this.permissions.readWrite, {id: userId});
   },
   isReadableByUser: function (userId) {
     return isWriteableByCurrentUser() ||
-      this.permissions.readOnly.indexOf(userId) !== -1;
+      !! _.findWhere(this.permissions.readOnly, {id: userId});
   },
   isWriteableByCurrentUser: function () {
     this.isWriteableByUser(Meteor.userId());
@@ -175,7 +175,26 @@ _.extend(NodeModel.prototype, {
   isReadableByCurrentUser: function () {
     this.isReadableByUser(Meteor.userId());
   },
-  generateShareUrl: function (writeable) {
+  getShareUrl: function (writeable) {
+    var permsKey = writeable ? "readWrite" : "readOnly";
+
+    // check if we already have a writeable share URL
+    var perm = _.findWhere(this.permissions[permsKey], {type: "token"});
+
+    if (perm) {
+      // make sure the parent doesn't have the same token, so that this URL
+      // will actually only share the current node
+      var parent = this.getParent();
+      var parentPerm = _.findWhere(parent.permissions[permsKey],
+        {id: perm.id});
+
+      if (! parentPerm) {
+        return Meteor.absoluteUrl(this._id + "?token=" + perm.id);
+      }
+
+      // Otherwise, generate a new token as if there were none.
+    }
+
     var token = Random.id();
     Meteor.call("shareNodeToPublicUrl", this._id, token, writeable);
 

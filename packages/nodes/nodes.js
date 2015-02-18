@@ -127,7 +127,17 @@ Nodes.matchPattern = {
   collapsedBy: Object,
 
   permissions: {
-    readOnly: [String], // ids of users that can only read but not write this node
-    readWrite: [String] // ids of users that can read and write this node
+    readOnly: [{
+      id: String,
+      date: Date,
+      type: Match.OneOf("user", "token"),
+      inherited: Boolean
+    }],
+    readWrite: [{
+      id: String,
+      date: Date,
+      type: Match.OneOf("user", "token"),
+      inherited: Boolean
+    }]
   }
 };

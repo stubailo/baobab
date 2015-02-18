@@ -1,20 +1,24 @@
 if (Meteor.isServer) {
   Meteor.publish('nodes', function () {
-    return Nodes.find({
-      $or: [
-        {"permissions.readWrite": this.userId},
-        {"permissions.readOnly": this.userId}
-      ]
-    });
+    if (this.userId) {
+      return Nodes.find({
+        $or: [
+          {"permissions.readWrite.id": this.userId},
+          {"permissions.readOnly.id": this.userId}
+        ]
+      });
+    }
   });
 
   Meteor.publish('nodesTokenAuth', function (token) {
-    return Nodes.find({
-      $or: [
-        {"permissions.readWrite": token},
-        {"permissions.readOnly": token}
-      ]
-    });
+    if (token) {
+      return Nodes.find({
+        $or: [
+          {"permissions.readWrite.id": token},
+          {"permissions.readOnly.id": token}
+        ]
+      });
+    }
   });
 }
 

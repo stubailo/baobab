@@ -1,6 +1,27 @@
 // These functions only know how to run from trusted code, and take the
 // user id as an argument
 
+var markPermissionsInherited = function (permissionsField) {
+  var makeInheritedTrue = function (perm) {
+    perm.inherited = true;
+    return perm;
+  };
+
+  // Set inherited to true on all permissions
+  permissionsField.readWrite = _.map(permissionsField.readWrite, makeInheritedTrue);
+  permissionsField.readOnly = _.map(permissionsField.readOnly, makeInheritedTrue);
+
+  return permissionsField;
+};
+
+var applyToNodeRecusively = function (node, modifier) {
+  Nodes.update(node._id, modifier);
+
+  _.each(node.children, function (child) {
+    applyToNodeRecusively(Nodes.findOne(child._id), modifier);
+  });
+};
+
 NodeTrustedApi = {
   insertNode: function (content, newId, parentNodeId, order, userId) {
     var parent;
@@ -11,13 +32,19 @@ NodeTrustedApi = {
       }
     }
 
-    var permissions = {
-      readWrite: [userId],
-      readOnly: []
-    };
-
+    var permissions;
     if (parent) {
-      permissions = parent.permissions;
+      permissions = markPermissionsInherited(parent.permissions);
+    } else {
+      permissions = {
+        readWrite: [{
+          type: "user",
+          date: new Date(),
+          id: userId,
+          inherited: false
+        }],
+        readOnly: []
+      };
     }
 
     var newNode = {
@@ -55,7 +82,7 @@ NodeTrustedApi = {
     // Remove the node from the database
     var numRemoved = Nodes.remove({
       _id: nodeId,
-      "permissions.readWrite": userId
+      "permissions.readWrite.id": userId
     });
 
     // Technically, this error can happen for two reasons - the node doesn't
@@ -93,7 +120,7 @@ NodeTrustedApi = {
 
     var updated = Nodes.update({
       _id: nodeId,
-      "permissions.readWrite": userId
+      "permissions.readWrite.id": userId
     }, {
       $set: {
         content: newContent,
@@ -158,6 +185,52 @@ NodeTrustedApi = {
 
     var newNodeOrder = calculateNodeOrder(newParentNodeId, previousNodeId);
 
+    if (newParentNodeId !== parent._id) {
+      // If we are moving this node to a different subtree, there might be
+      // different permissions there, so we have to update the inherited
+      // permissions of the node we are moving
+      
+      var newParent = Nodes.find(newParentNodeId);
+
+      if (! _.isEqual(newParent.permissions, parent.permissions)) {
+        // The permissions are in fact different, so we have to update the whole
+        // subtree under the node being moved with the new inherited permissions
+        
+        // First, take all of the permissions of the new parent
+        var newParentPerms = markPermissionsInherited(newParent.permissions);
+        var inheritedPerms = {
+          readOnly: _.where(node.permissions.readOnly, {inherited: true}),
+          readWrite: _.where(node.permissions.readWrite, {inherited: true})
+        };
+
+        var readOnlyPermsToAdd = _.difference(newParentPerms.readOnly,
+          inheritedPerms.readOnly);
+        var readWritePermsToAdd = _.difference(newParentPerms.readWrite,
+          inheritedPerms.readWrite);
+
+        var readOnlyPermsToRemove = _.difference(inheritedPerms.readOnly,
+          newParentPerms.readOnly);
+        var readWritePermsToRemove = _.difference(inheritedPerms.readWrite,
+          newParentPerms.readWrite);
+
+        // this is the modifier that we need to apply to this node and all
+        // of its children recursively to fix up the permissions
+        var modifier = {
+          $pullAll: {
+            "permissions.readOnly": readOnlyPermsToRemove,
+            "permissions.readWrite": readWritePermsToRemove
+          },
+          $pushAll: {
+            "permissions.readOnly": readOnlyPermsToAdd,
+            "permissions.readWrite": readWritePermsToAdd
+          }
+        };
+
+        // Pull the trigger
+        applyToNodeRecusively(node, modifier);
+      }
+    }
+
     // Remove this node from the children array of its parent(s)
     // XXX if we implement multiple parents, this code will remove all of the
     // references
@@ -200,7 +273,14 @@ NodeTrustedApi = {
       Accounts.sendEnrollmentEmail(targetUserId);
     }
 
-    NodeTrustedApi._shareNodeToId(nodeId, targetUserId, writeable, userId);
+    var permissionToken = {
+      id: targetUserId,
+      type: "user",
+      date: new Date(),
+      inherited: false
+    };
+
+    NodeTrustedApi._shareNodeToId(nodeId, permissionToken, writeable, userId);
   },
 
   shareNodeToPublicUrl: function (nodeId, token, writeable, userId) {
@@ -209,19 +289,26 @@ NodeTrustedApi = {
     check(writeable, Boolean);
     check(userId, String);
 
-    NodeTrustedApi._shareNodeToId(nodeId, token, writeable, userId);
+    var permissionToken = {
+      id: token,
+      type: "token",
+      date: new Date(),
+      inherited: false
+    };
+
+    NodeTrustedApi._shareNodeToId(nodeId, permissionToken, writeable, userId);
   },
 
-  _shareNodeToId: function (nodeId, targetUserId, writeable, userId) {
+  _shareNodeToId: function (nodeId, permissionToken, writeable, userId) {
     var node = Nodes.findOne(nodeId);
     var numUpdated;
 
     if (writeable) {
       numUpdated = Nodes.update({
         _id:nodeId,
-        "permissions.readWrite": userId
+        "permissions.readWrite.id": userId
       }, {$addToSet: {
-        "permissions.readWrite": targetUserId
+        "permissions.readWrite": permissionToken
       } });
 
       if (numUpdated === 0) {
@@ -230,9 +317,9 @@ NodeTrustedApi = {
     } else {
       numUpdated = Nodes.update({
         _id:nodeId,
-        "permissions.readOnly": userId
+        "permissions.readOnly.id": userId
       }, {$addToSet: {
-        "permissions.readOnly": targetUserId
+        "permissions.readOnly": permissionToken
       } });
 
       if (numUpdated === 0) {
@@ -241,7 +328,9 @@ NodeTrustedApi = {
     }
 
     _.each(node.children, function (child) {
-      NodeTrustedApi.shareNode(child._id, targetUserId, writeable, userId);
+      // All children get inherited permissions from this node
+      permissionToken.inherited = true;
+      NodeTrustedApi._shareNodeToId(child._id, permissionToken, writeable, userId);
     });
   }
 };
