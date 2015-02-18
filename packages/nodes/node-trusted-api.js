@@ -22,6 +22,20 @@ var applyToNodeRecusively = function (node, modifier) {
   });
 };
 
+// Like _.difference, but knows how to deal with permissions objects
+// O(n) implementation by making a dictionary out of unique keys
+var permDifference = function (left, right) {
+  var dictionaryOfRight = {};
+
+  _.each(right, function (perm) {
+    dictionaryOfRight[perm.id + perm.date] = perm;
+  });
+
+  return _.filter(left, function (perm) {
+    return _.has(dictionaryOfRight, perm.id + perm.date);
+  });
+};
+
 NodeTrustedApi = {
   insertNode: function (content, newId, parentNodeId, order, userId) {
     var parent;
@@ -138,7 +152,8 @@ NodeTrustedApi = {
   moveNode: function (nodeId, newParentNodeId, previousNodeId, userId) {
     check(nodeId, String);
     check(newParentNodeId, String);
-    check(previousNodeId, Match.Optional(String));
+    check(previousNodeId, Match.Optional(Match.OneOf(String, null)));
+    check(userId, String);
 
     if (nodeId === previousNodeId) {
       throw new Meteor.Error("node-same-as-previous-node");
@@ -190,8 +205,9 @@ NodeTrustedApi = {
       // different permissions there, so we have to update the inherited
       // permissions of the node we are moving
       
-      var newParent = Nodes.find(newParentNodeId);
+      var newParent = Nodes.findOne(newParentNodeId);
 
+      console.log(parent.permissions, newParent.permissions);
       if (! _.isEqual(newParent.permissions, parent.permissions)) {
         // The permissions are in fact different, so we have to update the whole
         // subtree under the node being moved with the new inherited permissions
@@ -203,28 +219,40 @@ NodeTrustedApi = {
           readWrite: _.where(node.permissions.readWrite, {inherited: true})
         };
 
-        var readOnlyPermsToAdd = _.difference(newParentPerms.readOnly,
+        var readOnlyPermsToAdd = permDifference(newParentPerms.readOnly,
           inheritedPerms.readOnly);
-        var readWritePermsToAdd = _.difference(newParentPerms.readWrite,
+        var readWritePermsToAdd = permDifference(newParentPerms.readWrite,
           inheritedPerms.readWrite);
 
-        var readOnlyPermsToRemove = _.difference(inheritedPerms.readOnly,
+        var readOnlyPermsToRemove = permDifference(inheritedPerms.readOnly,
           newParentPerms.readOnly);
-        var readWritePermsToRemove = _.difference(inheritedPerms.readWrite,
+        var readWritePermsToRemove = permDifference(inheritedPerms.readWrite,
           newParentPerms.readWrite);
 
         // this is the modifier that we need to apply to this node and all
         // of its children recursively to fix up the permissions
         var modifier = {
-          $pullAll: {
-            "permissions.readOnly": readOnlyPermsToRemove,
-            "permissions.readWrite": readWritePermsToRemove
-          },
-          $pushAll: {
-            "permissions.readOnly": readOnlyPermsToAdd,
-            "permissions.readWrite": readWritePermsToAdd
-          }
+          $pullAll: {},
+          $pushAll: {}
         };
+
+        if (! _.isEmpty(readOnlyPermsToAdd)) {
+          modifier.$pushAll["permissions.readOnly"] = readOnlyPermsToAdd;
+        }
+
+        if (! _.isEmpty(readWritePermsToAdd)) {
+          modifier.$pushAll["permissions.readWrite"] = readWritePermsToAdd;
+        }
+
+        if (! _.isEmpty(readOnlyPermsToRemove)) {
+          modifier.$pullAll["permissions.readOnly"] = readOnlyPermsToRemove;
+        }
+
+        if (! _.isEmpty(readWritePermsToRemove)) {
+          modifier.$pullAll["permissions.readWrite"] = readWritePermsToRemove;
+        }
+
+        console.log(modifier);
 
         // Pull the trigger
         applyToNodeRecusively(node, modifier);

@@ -159,8 +159,9 @@ _.extend(NodeModel.prototype, {
   expand: function () {
     Meteor.call("expandNode", this._id);
   },
-  moveTo: function (newParentNodeId, beforeNodeId) {
-    Meteor.call("moveNode", this._id, newParentNodeId, beforeNodeId);
+  moveTo: function (newParentNodeId, previousNodeId) {
+    console.log("move to called", previousNodeId);
+    Meteor.call("moveNode", this._id, newParentNodeId, previousNodeId);
   },
   isWriteableByUser: function (userId) {
     return !! _.findWhere(this.permissions.readWrite, {id: userId});

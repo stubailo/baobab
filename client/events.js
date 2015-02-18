@@ -137,6 +137,7 @@ Template.node.events({
         }
       }
     } else if (event.which === 9) { // tab
+      console.log("tab pressed");
       var ps = node.getPreviousSibling();
       if (ps) {
         node.moveTo(ps._id);
