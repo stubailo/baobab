@@ -19,7 +19,7 @@ var permDifference = function (left, right) {
   });
 
   return _.filter(left, function (perm) {
-    return _.has(dictionaryOfRight, perm.id + perm.date);
+    return ! _.has(dictionaryOfRight, perm.id + perm.date);
   });
 };
 
@@ -196,7 +196,6 @@ NodeTrustedApi = {
       
       var newParent = Nodes.findOne(newParentNodeId);
 
-      console.log(parent.permissions, newParent.permissions);
       if (! _.isEqual(newParent.permissions, parent.permissions)) {
         // The permissions are in fact different, so we have to update the whole
         // subtree under the node being moved with the new inherited permissions
@@ -220,29 +219,35 @@ NodeTrustedApi = {
 
         // this is the modifier that we need to apply to this node and all
         // of its children recursively to fix up the permissions
-        var modifier = {
-          $pullAll: {},
+        var pushModifier = {
           $pushAll: {}
         };
 
         if (! _.isEmpty(readOnlyPermsToAdd)) {
-          modifier.$pushAll["permissions.readOnly"] = readOnlyPermsToAdd;
+          pushModifier.$pushAll["permissions.readOnly"] = readOnlyPermsToAdd;
         }
 
         if (! _.isEmpty(readWritePermsToAdd)) {
-          modifier.$pushAll["permissions.readWrite"] = readWritePermsToAdd;
+          pushModifier.$pushAll["permissions.readWrite"] = readWritePermsToAdd;
         }
 
+        // We can't both pull and push in the same operation due to a mongo
+        // limitation
+        var pullModifier = {
+          $pullAll: {}
+        };
+
         if (! _.isEmpty(readOnlyPermsToRemove)) {
-          modifier.$pullAll["permissions.readOnly"] = readOnlyPermsToRemove;
+          pullModifier.$pullAll["permissions.readOnly"] = readOnlyPermsToRemove;
         }
 
         if (! _.isEmpty(readWritePermsToRemove)) {
-          modifier.$pullAll["permissions.readWrite"] = readWritePermsToRemove;
+          pullModifier.$pullAll["permissions.readWrite"] = readWritePermsToRemove;
         }
 
         // Pull the trigger
-        applyToNodeRecusively(node, modifier);
+        applyToNodeRecusively(node, pushModifier);
+        applyToNodeRecusively(node, pullModifier);
       }
     }
 
