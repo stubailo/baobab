@@ -137,11 +137,16 @@ Template.node.events({
         }
       }
     } else if (event.which === 9) { // tab
-      console.log("tab pressed");
       var ps = node.getPreviousSibling();
       if (ps) {
-        node.moveTo(ps._id);
+        var newPrevSibling = ps.getLastChild();
+        if (newPrevSibling) {
+          node.moveTo(ps._id, newPrevSibling._id);
+        } else {
+          node.moveTo(ps._id);
+        }
       }
+
       return false;
     }
   }
