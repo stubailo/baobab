@@ -99,7 +99,8 @@ Template.node.destroyed = function() {
 
   delete templatesByNodeID[this.data._id];
 
-  if (this.data._id === focusedNode._id) {
+  if (focusedNode &&
+      focusedNode._id === this.data._id) {
     focusedNode = this.data.getParent();
   }
 };
