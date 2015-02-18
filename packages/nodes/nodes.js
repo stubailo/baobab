@@ -15,7 +15,7 @@ Nodes = new Mongo.Collection("nodes", {
  * @return {Number}              The order key that will place the new node in
  * the desired place among the children
  */
-var calculateNodeOrder = function (parentNodeId, previousNodeId) {
+calculateNodeOrder = function (parentNodeId, previousNodeId) {
   if (! parentNodeId) {
     // We are creating the root node, so we don't really care what the order is
     return 0;
