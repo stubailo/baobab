@@ -1,19 +1,6 @@
 // These functions only know how to run from trusted code, and take the
 // user id as an argument
 
-var markPermissionsInherited = function (permissionsField) {
-  var makeInheritedTrue = function (perm) {
-    perm.inherited = true;
-    return perm;
-  };
-
-  // Set inherited to true on all permissions
-  permissionsField.readWrite = _.map(permissionsField.readWrite, makeInheritedTrue);
-  permissionsField.readOnly = _.map(permissionsField.readOnly, makeInheritedTrue);
-
-  return permissionsField;
-};
-
 var applyToNodeRecusively = function (node, modifier) {
   Nodes.update(node._id, modifier);
 
@@ -48,7 +35,7 @@ NodeTrustedApi = {
 
     var permissions;
     if (parent) {
-      permissions = markPermissionsInherited(parent.permissions);
+      permissions = NodeTrustedApi._markPermissionsInherited(parent.permissions);
     } else {
       permissions = {
         readWrite: [{
@@ -213,7 +200,7 @@ NodeTrustedApi = {
         // subtree under the node being moved with the new inherited permissions
         
         // First, take all of the permissions of the new parent
-        var newParentPerms = markPermissionsInherited(newParent.permissions);
+        var newParentPerms = NodeTrustedApi._markPermissionsInherited(newParent.permissions);
         var inheritedPerms = {
           readOnly: _.where(node.permissions.readOnly, {inherited: true}),
           readWrite: _.where(node.permissions.readWrite, {inherited: true})
@@ -358,5 +345,18 @@ NodeTrustedApi = {
       permissionToken.inherited = true;
       NodeTrustedApi._shareNodeToId(child._id, permissionToken, writeable, userId);
     });
+  },
+
+  _markPermissionsInherited: function (permissionsField) {
+    var makeInheritedTrue = function (perm) {
+      perm.inherited = true;
+      return perm;
+    };
+
+    // Set inherited to true on all permissions
+    permissionsField.readWrite = _.map(permissionsField.readWrite, makeInheritedTrue);
+    permissionsField.readOnly = _.map(permissionsField.readOnly, makeInheritedTrue);
+
+    return permissionsField;
   }
 };
