@@ -139,10 +139,7 @@ Template.node.rendered = function() {
     return;
   }
 
-  var initialContent = this.find(".initialContent");
-  var content = initialContent.innerText;
-  initialContent.innerHTML = "";
-  this.find(".input").innerText = content;
+  this.find(".input").innerText = node.content;
 
   var nodeID = node._id;
   templatesByNodeID[nodeID] = this;
