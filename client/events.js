@@ -137,6 +137,17 @@ Template.node.events({
         }
       }
     } else if (event.which === 9) { // tab
+      if (event.shiftKey) {
+        var parent = node.getParent();
+        var grandparent = parent && parent.getParent();
+        if (grandparent) {
+          // Move the node to the next sibling of its parent.
+          node.moveTo(grandparent._id, parent._id);
+        }
+
+        return false;
+      }
+
       var ps = node.getPreviousSibling();
       if (ps) {
         var newPrevSibling = ps.getLastChild();
