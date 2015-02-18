@@ -82,11 +82,9 @@ Template.node.events({
             if (container === input) {
               var ps = node.getPreviousSibling();
               if (ps && ps.children.length === 0) {
-
                 if (_.has(templatesByNodeID, ps._id)) {
                   var prevInput = templatesByNodeID[ps._id].find(".input");
                   var dummySpan = document.createElement("span");
-                  var dummyID = dummySpan.id = Random.id();
 
                   prevInput.appendChild(dummySpan);
                   while (input.firstChild) {
