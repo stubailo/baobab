@@ -143,6 +143,8 @@ Template.node.events({
         if (grandparent) {
           // Move the node to the next sibling of its parent.
           node.moveTo(grandparent._id, parent._id);
+          focusedNode = node;
+          refocus();
         }
 
         return false;
@@ -156,6 +158,9 @@ Template.node.events({
         } else {
           node.moveTo(ps._id);
         }
+
+        focusedNode = node;
+        refocus();
       }
 
       return false;
@@ -190,9 +195,4 @@ Template.node.destroyed = function() {
   }
 
   delete templatesByNodeID[this.data._id];
-
-  if (focusedNode &&
-      focusedNode._id === this.data._id) {
-    focusedNode = this.data.getParent();
-  }
 };
