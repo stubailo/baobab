@@ -34,15 +34,6 @@ _.extend(NodeModel.prototype, {
     });
   },
 
-  getArrowIcon: function() {
-    return new Spacebars.SafeString(
-      this.hasChildren()
-        ? this.isCollapsedByCurrentUser()
-          ? "&#9654;" : "&#9660;"
-        : "&bull;"
-    );
-  },
-
   getArrowIconClasses: function() {
     if (this.content === null) {
       return " hidden";
