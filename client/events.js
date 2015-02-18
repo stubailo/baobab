@@ -12,11 +12,50 @@ Meteor.startup(function () {
   });
 });
 
+function deleteMarkers(input) {
+  var markers = input.getElementsByTagName("marker");
+
+  // BEWARE that markers is a live-updating NodeList, so iterating
+  // forwards will change the list with each removal, leaving some markers
+  // in the input element!!
+  for (var i = markers.length - 1; i >= 0; --i) {
+    var marker = markers.item(i);
+    var parent = marker.parentNode;
+    if (parent) {
+      parent.removeChild(marker);
+    }
+  }
+}
+
+function insertMarkers(node, input) {
+  if (_.has(recordedSelectionsByID, node._id)) {
+    deleteMarkers(input);
+    var range = recordedSelectionsByID[node._id];
+    var startMarker = document.createElement("marker");
+    var endMarker = document.createElement("marker");
+    var endRange = range.cloneRange();
+    endRange.collapse(false); // Collapse to end.
+    range.collapse(true); // Collapse to start.
+    range.insertNode(startMarker);
+    endRange.insertNode(endMarker);
+    node.updateContent(input.innerHTML);
+  }
+}
+
+var updateText = _.debounce(function(node, input) {
+  node.updateContent(input.innerHTML);
+}, 200);
+
 Template.node.events({
   "focus .input": function(event, template) {
     focusedNode = template.data;
     // No need to call refocus because the input just received focus.
     return false;
+  },
+
+  "blur .input": function(event, template) {
+    insertMarkers(this, event.target);
+    event.stopPropagation();
   },
 
   "click .arrow": function(event, template) {
@@ -30,13 +69,12 @@ Template.node.events({
       var candidate = focusedNode;
       while (candidate) {
         if (candidate._id === node._id) {
-          focusedNode = node;
+          refocus(node);
+          break;
         }
         candidate = candidate.getParent();
       }
     }
-
-    refocus();
 
     return false;
   },
@@ -52,13 +90,16 @@ Template.node.events({
     return false;
   },
 
+  "keypress .input": recordSelection,
+  "mousedown .input": recordSelection,
+  "mouseup .input": recordSelection,
+  "mouseout .input": recordSelection,
+
   "keydown .input": function (event) {
     var node = this;
     var input = event.target;
 
-    var updateText = _.debounce(function(node, input) {
-      node.updateContent(input.textContent);
-    }, 200);
+    recordSelection.apply(this, arguments);
 
     updateText(node, input);
 
@@ -75,7 +116,7 @@ Template.node.events({
           while (dummyDiv.nextSibling) {
             dummyDiv.appendChild(dummyDiv.nextSibling);
           }
-          content = dummyDiv.textContent;
+          content = dummyDiv.innerHTML;
           dummyDiv.parentNode.removeChild(dummyDiv);
         }
 
@@ -90,8 +131,7 @@ Template.node.events({
       while (node) {
         var pn = node.getPrecedingNode();
         if (pn && pn.isVisible()) {
-          focusedNode = pn;
-          refocus();
+          refocus(pn);
           return false;
         }
         node = pn;
@@ -101,8 +141,7 @@ Template.node.events({
       while (node) {
         var fn = node.getFollowingNode();
         if (fn && fn.isVisible()) {
-          focusedNode = fn;
-          refocus();
+          refocus(fn);
           return false;
         }
         node = fn;
@@ -138,16 +177,14 @@ Template.node.events({
 
                 } else {
                   node.remove();
-                  focusedNode = ps;
-                  refocus();
+                  refocus(ps);
                 }
 
               } else if (!node.content.match(/\S/)) {
                 var pn = node.getPrecedingNode();
                 if (pn) {
-                  focusedNode = pn;
                   node.remove();
-                  refocus();
+                  refocus(pn);
                 }
               }
 
@@ -164,9 +201,9 @@ Template.node.events({
         var grandparent = parent && parent.getParent();
         if (grandparent) {
           // Move the node to the next sibling of its parent.
+          insertMarkers(node, input);
           node.moveTo(grandparent._id, parent._id);
-          focusedNode = node;
-          refocus();
+          refocus(node);
         }
 
         return false;
@@ -174,6 +211,8 @@ Template.node.events({
 
       var ps = node.getPreviousSibling();
       if (ps) {
+        insertMarkers(node, input);
+
         var newPrevSibling = ps.getLastChild();
         if (newPrevSibling) {
           node.moveTo(ps._id, newPrevSibling._id);
@@ -181,8 +220,7 @@ Template.node.events({
           node.moveTo(ps._id);
         }
 
-        focusedNode = node;
-        refocus();
+        refocus(node);
       }
 
       return false;
@@ -190,11 +228,69 @@ Template.node.events({
   }
 });
 
-function refocus() {
+var recordedSelectionsByID = {};
+
+function recordSelection(event) {
+  var node = this;
+  var input = event.target;
+
+  var selection = window.getSelection();
+  if (selection.rangeCount === 0) {
+    return;
+  }
+
+  for (var i = 0; i < selection.rangeCount; ++i) {
+    var range = selection.getRangeAt(0);
+    if (input.contains(range.startContainer)) {
+      recordedSelectionsByID[node._id] = range;
+      return;
+    }
+  }
+
+  delete recordedSelectionsByID[node._id];
+}
+
+function refocus(newFocusedNode) {
+  focusedNode = newFocusedNode || focusedNode;
+
   if (focusedNode && _.has(templatesByNodeID, focusedNode._id)) {
     var template = templatesByNodeID[focusedNode._id];
-    template.find(".input").focus();
+    var input = template.find(".input");
+
+    var markers = input.getElementsByTagName("marker");
+    if (markers.length === 2) {
+      var startMarker = markers.item(0);
+      var endMarker = markers.item(1);
+
+      console.log(startMarker, endMarker);
+
+      if (startMarker && input.contains(startMarker) &&
+          endMarker && input.contains(endMarker)) {
+        var selection = window.getSelection();
+        selection.removeAllRanges();
+
+        var startContainer = startMarker.parentNode;
+        var startOffset = indexOfNode(startMarker);
+
+        var endContainer = endMarker.parentNode;
+        var endOffset = indexOfNode(endMarker);
+
+        selection.collapse(startContainer, startOffset);
+        selection.extend(endContainer, endOffset);
+      }
+    }
+
+    input.focus();
   }
+}
+
+function indexOfNode(node) {
+  var result = -1;
+  while (node) {
+    node = node.previousSibling;
+    ++result;
+  }
+  return result;
 }
 
 Template.node.rendered = function() {
@@ -203,7 +299,7 @@ Template.node.rendered = function() {
     return;
   }
 
-  this.find(".input").textContent = node.content;
+  this.find(".input").innerHTML = node.content;
 
   var nodeID = node._id;
   templatesByNodeID[nodeID] = this;
