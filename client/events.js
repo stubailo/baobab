@@ -1,6 +1,17 @@
 var focusedNode = null;
 var templatesByNodeID = {};
 
+Session.setDefault("contextMenuNodeId", null);
+
+// Prevent scrolling when the context menu is open
+Meteor.startup(function () {
+  $(window).on("mousewheel", function () {
+    if (Session.get("contextMenuNodeId")) {
+      return false;
+    }
+  });
+});
+
 Template.node.events({
   "focus .input": function(event, template) {
     focusedNode = template.data;
@@ -26,6 +37,17 @@ Template.node.events({
     }
 
     refocus();
+
+    return false;
+  },
+
+  "contextmenu .arrow": function (event, template) {
+    Session.set("contextMenuNodeId", this._id);
+    Session.set("contextMenuPosition", template.$(".bullet").offset());
+
+    $(window).one("blur", function () {
+      Session.set("contextMenuNodeId", null);
+    });
 
     return false;
   },
@@ -196,3 +218,10 @@ Template.node.destroyed = function() {
 
   delete templatesByNodeID[this.data._id];
 };
+
+Template.body.events({
+  "contextmenu .context-menu-overlay, click .context-menu-overlay": function () {
+    Session.set("contextMenuNodeId", null);
+    return false;
+  }
+});

@@ -3,6 +3,11 @@
 </head>
 
 <body>
+  {{#if contextMenu}}
+    {{> nodeContextMenu}}
+    <div class="context-menu-overlay"></div>
+  {{/if}}
+
   <h1>Baobab</h1>
 
   {{> loginButtons}}
@@ -23,9 +28,11 @@
 
 <template name="node">
   <div class="item">
-    <a class="zoom" href="/{{_id}}">&mapstoup;</a>
-    <div class="arrow{{getArrowIconClasses}}"></div>
-    <div class="input" contentEditable></div>
+    <div class="bullet">
+      <a class="zoom" href="/{{_id}}">&mapstoup;</a>
+      <div class="arrow{{getArrowIconClasses}}"></div>
+      <div class="input" contentEditable></div>
+    </div>
     {{#unless isCollapsedByCurrentUser}}
       <div class="list">
       {{#each getOrderedChildren}}
@@ -33,5 +40,16 @@
       {{/each}}
       </div>
     {{/unless}}
+  </div>
+</template>
+
+<template name="nodeContextMenu">
+  <div class="node-context-menu-positioner" {{position}}>
+    <div class="node-context-menu">
+      <ul>
+        <li>Share</li>
+        <li>Delete</li>
+      </ul>
+    </div>
   </div>
 </template>

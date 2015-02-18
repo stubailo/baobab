@@ -1,3 +1,5 @@
+/* CSS declarations go here */
+
 body {
   padding: 100px 0 0 10%;
 }
@@ -24,7 +26,7 @@ div.item:first-of-type .item  {
 
 .input {
   position: relative;
-  left: 30px;
+  left: 50px;
   outline: 0px solid transparent;
   border: 0 none;
   font-size: 12pt;
@@ -32,6 +34,15 @@ div.item:first-of-type .item  {
 }
 
 .zoom {
+  display: none;
+}
+
+.bullet {
+  position: relative;
+}
+
+.bullet:hover > .zoom {
+  display: block;
   position: absolute;
   width: 20px;
   height: 20px;
@@ -49,6 +60,10 @@ div.item:first-of-type .item  {
   left: 20px;
   line-height: 1.5em;
   cursor: pointer;
+
+  &:hover {
+    text-shadow: 0 0 10px blue;
+  }
 }
 
 .arrow.hidden {
@@ -59,10 +74,50 @@ div.item:first-of-type .item  {
   background-image: url("/bullet.svg");
 }
 
-.arrow.collapsed {
-  background-image: url("/collapsed.svg");
+.arrow.collapsed:before {
+  content: "\25B6";
 }
 
-.arrow.expanded {
-  background-image: url("/expanded.svg");
+.arrow.expanded:before {
+  content: "\25BC";
+}
+
+.node-context-menu-positioner {
+  position: absolute;
+  z-index: 100;
+}
+
+.node-context-menu {
+  position: absolute;
+  background: #eee;
+  z-index: 100;
+  left: 20px;
+  box-shadow: 0 2px 4px;
+  top: 25px;
+
+  ul {
+    padding: 0;
+    list-style: none;
+    margin: 0;
+
+    li {
+      padding: 5px 10px;
+      border-bottom: #ccc 1px solid;
+
+      &:hover {
+        background: #33f;
+        color: white;
+        cursor: pointer;
+      }
+    }
+  }
+}
+
+.context-menu-overlay {
+  position: fixed;
+  bottom: 0;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 40;
 }
