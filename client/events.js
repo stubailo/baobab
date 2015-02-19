@@ -309,21 +309,23 @@ Template.node.rendered = function() {
   }
 
   var nodeID = node._id;
+  var firstTime = true;
   template.contentComputation = Tracker.autorun(function(computation) {
-    var template = getTemplateByNodeID(nodeID);
     var node = Nodes.findOne(nodeID);
-    if (template && template.data === node) {
+    if (node) {
       var input = template.find(".input");
-      if (document.activeElement !== input) {
+      if (firstTime || document.activeElement !== input) {
+        if (nodeID === "KSHFmtsFWwe2P55jM" &&
+            node.content.match(/asdf/)) {
+          console.log(input, node);
+          debugger;
+        }
         input.innerHTML = node.content;
       }
     }
+    firstTime = false;
     return computation;
   });
-
-  // Set the content at least once, when the node is first rendered,
-  // regardless of whether the node is focused.
-  template.find(".input").innerHTML = node.content;
 
   templatesByNodeID[nodeID] = template;
   refocus();
