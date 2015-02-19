@@ -9,7 +9,7 @@
 // parentId and order are optional
 var createTestTree = function (nodeTree, userId, parentId, order) {
   var newParentId = NodeTrustedApi.insertNode(nodeTree.content, Random.id(),
-    parentId, order, userId, userId);
+    parentId, order, userId);
 
   _.each(nodeTree.children, function (child, index) {
     createTestTree(child, userId, newParentId, index);
@@ -94,14 +94,14 @@ Tinytest.add('removeNode', function (test) {
   test.equal(Nodes.find().count(), 6);
 
   var fNodeId = Nodes.findOne({content: "f"})._id;
-  NodeTrustedApi.removeNode(fNodeId, userId);
+  NodeTrustedApi.removeNode(fNodeId, {userId: userId});
 
   // The whole subtree should be removed, leaving us with 3 nodes
   test.equal(Nodes.find().count(), 3);
 
   // Make sure some random user can't remove it!
   test.throws(function () {
-    NodeTrustedApi.removeNode(fNodeId, "fakeuserid");
+    NodeTrustedApi.removeNode(fNodeId, {userId: "fakeuserid"});
   });
 });
 
@@ -134,7 +134,7 @@ Tinytest.add('sharing nodes', function (test) {
 
   // Make sure some random user can't remove it!
   test.throws(function () {
-    NodeTrustedApi.removeNode(fNodeId, "fakeuserid");
+    NodeTrustedApi.removeNode(fNodeId, {userId: "fakeuserid"});
   });
 
   // Share the node
@@ -143,11 +143,11 @@ Tinytest.add('sharing nodes', function (test) {
 
   // Now remove a subnode using the share token as the permission
   var dNodeId = Nodes.findOne({content: "d"})._id;
-  NodeTrustedApi.removeNode(dNodeId, shareToken);
+  NodeTrustedApi.removeNode(dNodeId, {token: shareToken});
   test.equal(Nodes.find().count(), 5);
 
   // Now remove the subtree using the share token as the permission
-  NodeTrustedApi.removeNode(fNodeId, shareToken);
+  NodeTrustedApi.removeNode(fNodeId, {token: shareToken});
   test.equal(Nodes.find().count(), 3);
 });
 
@@ -199,7 +199,7 @@ Tinytest.add('moving nodes with complex permissions', function (test) {
       var token = tokens[letter];
 
       // Make sure all of the permissions we are looking for are there
-      test.isTrue(_.findWhere(node.permissions, {userIdOrToken: token}));
+      test.isTrue(_.findWhere(node.permissions, {token: token}));
     });
   };
 

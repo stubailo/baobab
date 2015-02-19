@@ -163,7 +163,7 @@ _.extend(NodeModel.prototype, {
     Meteor.call("moveNode", this._id, newParentNodeId, previousNodeId);
   },
   isWriteableByUser: function (userId) {
-    return !! _.findWhere(this.permissions, {userIdOrToken: userId, write: true});
+    return !! _.findWhere(this.permissions, {userId: userId, write: true});
   },
   isWriteableByCurrentUser: function () {
     this.isWriteableByUser(Meteor.userId());

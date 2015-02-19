@@ -5,7 +5,7 @@ if (Meteor.isServer) {
         permissions: {
           $elemMatch: {
             read: true,
-            userIdOrToken: this.userId
+            userId: this.userId
           }
         }
       });
@@ -18,7 +18,7 @@ if (Meteor.isServer) {
         permissions: {
           $elemMatch: {
             read: true,
-            userIdOrToken: token
+            token: token
           }
         }
       });
