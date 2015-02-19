@@ -31,9 +31,12 @@
     <div class="bullet {{#if hasBeenShared}}shared{{/if}}">
       {{#if multiUser}}
         <div class="editor" style="left:{{getEditorDeindent}}px; border-color: {{generatedColor}}; color: {{generatedColor}}">
-          <span>{{lastUpdatedBy.username}}</span></div>
+          <span>{{lastUpdatedBy.username}}</span>
+        </div>
       {{/if}}
+      {{#if hasChildren}}
       <a class="zoom" href="/{{_id}}">&mapstoup;</a>
+      {{/if}}
       <div class="arrow{{getArrowIconClasses}}"></div>
       <div class="input" contentEditable></div>
     </div>
