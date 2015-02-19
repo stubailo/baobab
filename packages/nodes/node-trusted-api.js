@@ -325,7 +325,7 @@ NodeTrustedApi = {
 
     if (writeable) {
       numUpdated = Nodes.update({
-        _id:nodeId,
+        _id: nodeId,
         "permissions.readWrite.id": userId
       }, {$addToSet: {
         "permissions.readWrite": permissionToken
@@ -336,8 +336,11 @@ NodeTrustedApi = {
       }
     } else {
       numUpdated = Nodes.update({
-        _id:nodeId,
-        "permissions.readOnly.id": userId
+        _id: nodeId,
+        $or: [
+          { "permissions.readWrite.id": userId },
+          { "permissions.readOnly.id": userId }
+        ]
       }, {$addToSet: {
         "permissions.readOnly": permissionToken
       } });

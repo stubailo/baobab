@@ -8,6 +8,8 @@
     <div class="context-menu-overlay"></div>
   {{/if}}
 
+  {{> shareModal}}
+
   <h1>Baobab</h1>
 
   {{> loginButtons}}
@@ -47,9 +49,72 @@
   <div class="node-context-menu-positioner" {{position}}>
     <div class="node-context-menu">
       <ul>
-        <li>Share</li>
+        <li class="share">Share</li>
         <li>Delete</li>
       </ul>
     </div>
   </div>
+</template>
+
+<template name="shareModal">
+  {{#if shareModalOpen}}
+    {{#with node}}
+      <div class="share-modal-overlay"></div>
+      <div class="share-modal">
+        <div class="title">
+          Share settings for "{{content}}"
+
+          <button class="close">Close popup</button>
+        </div>
+
+        <div class="body">
+          <h3>Public Links</h3>
+
+          <ul>
+            <li>
+              Read only:
+              {{#if getShareUrl false}}
+                {{getShareUrl false}}
+              {{else}}
+                <button class="get-readonly-link">
+                  Create a read-only public link
+                </button>
+              {{/if}}
+            </li>
+            <li>
+              Editable:
+              {{#if getShareUrl true}}
+                {{getShareUrl true}}
+              {{else}}
+                <button class="get-readwrite-link">
+                  Create an editable public link
+                </button>
+              {{/if}}
+            </li>
+          </ul>
+
+          <h3>Users</h3>
+
+          <ul>
+            {{#each permissions.readOnly}}
+              <li>{{id}}, {{date}}</li>
+            {{/each}}
+            {{#each permissions.readWrite}}
+              <li>{{id}}, {{date}}</li>
+            {{/each}}
+          </ul>
+
+          <form>
+            <h4>Share by email address or username of another Baobab user</h4>
+            <input type="text" />
+
+            <input type="radio" name="permission" value="readOnly" /> Read Only
+            <input type="radio" name="permission" value="readWrite" /> Editable
+
+            <button>Share</button>
+          </form>
+        </div>
+      </div>
+    {{/with}}
+  {{/if}}
 </template>
