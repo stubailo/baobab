@@ -176,15 +176,6 @@ _.extend(NodeModel.prototype, {
   isReadableByCurrentUser: function () {
     this.isReadableByUser(Meteor.userId());
   },
-  generateShareUrl: function (writeable) {
-    var existingShareUrl = this.getShareUrl(writeable);
-    if (existingShareUrl) {
-      return existingShareUrl;
-    }
-
-    var token = Random.id();
-    Meteor.call("shareNodeToPublicUrl", this._id, token, writeable);
-  },
   getShareUrl: function (writeable) {
     var permsKey = writeable ? "readWrite" : "readOnly";
 
@@ -201,8 +192,13 @@ _.extend(NodeModel.prototype, {
       if (! parentPerm) {
         return Meteor.absoluteUrl(this._id + "?token=" + perm.id);
       }
+
+      // Otherwise, generate a new token as if there were none.
     }
 
-    return null;
+    var token = Random.id();
+    Meteor.call("shareNodeToPublicUrl", this._id, token, writeable);
+
+    return Meteor.absoluteUrl(this._id + "?token=" + token);
   }
 });

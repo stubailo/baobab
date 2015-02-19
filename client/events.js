@@ -5,7 +5,7 @@ Session.setDefault("contextMenuNodeId", null);
 // Prevent scrolling when the context menu is open
 Meteor.startup(function () {
   $(window).on("mousewheel", function () {
-    if (Session.get("contextMenuNodeId") || Session.get("shareModalNodeId")) {
+    if (Session.get("contextMenuNodeId")) {
       return false;
     }
   });
