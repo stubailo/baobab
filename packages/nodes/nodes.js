@@ -92,27 +92,11 @@ calculateNodeOrder = function (parentNodeId, previousNodeId) {
 // The order needs to be generated on the client to avoid UI flickering from
 // different orders being generated on the client and server
 Nodes.insertNode = function (content, parentNodeId, previousNodeId) {
-  var parent = Nodes.findOne(parentNodeId);
-  if (! parent.isWriteableByCurrentUser()) {
-
-  }
-
   var newNodeOrder = calculateNodeOrder(parentNodeId, previousNodeId);
   var newID = Random.id();
   Meteor.call("_insertNode", content, newID, parentNodeId, newNodeOrder);
   return newID;
 };
-
-Nodes.permissionMatchPattern = {
-  userId: Match.Optional(String),
-  token: Match.Optional(String),
-  date: Date,
-  inherited: Boolean,
-  read: Boolean,
-  write: Boolean,
-  owner: Boolean,
-  givenBy: String
-}
 
 Nodes.matchPattern = {
   _id: String,
@@ -142,5 +126,18 @@ Nodes.matchPattern = {
   // collapsed this node
   collapsedBy: Object,
 
-  permissions: [Nodes.permissionMatchPattern]
+  permissions: {
+    readOnly: [{
+      id: String,
+      date: Date,
+      type: Match.OneOf("user", "token"),
+      inherited: Boolean
+    }],
+    readWrite: [{
+      id: String,
+      date: Date,
+      type: Match.OneOf("user", "token"),
+      inherited: Boolean
+    }]
+  }
 };

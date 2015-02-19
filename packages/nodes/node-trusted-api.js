@@ -15,11 +15,11 @@ var permDifference = function (left, right) {
   var dictionaryOfRight = {};
 
   _.each(right, function (perm) {
-    dictionaryOfRight[perm.userId + perm.token + perm.date] = perm;
+    dictionaryOfRight[perm.id + perm.date] = perm;
   });
 
   return _.filter(left, function (perm) {
-    return ! _.has(dictionaryOfRight, perm.userId + perm.token + perm.date);
+    return ! _.has(dictionaryOfRight, perm.id + perm.date);
   });
 };
 
@@ -37,15 +37,15 @@ NodeTrustedApi = {
     if (parent) {
       permissions = NodeTrustedApi._markPermissionsInherited(parent.permissions);
     } else {
-      permissions = [{
-        date: new Date(),
-        userId: userId,
-        inherited: false,
-        read: true,
-        write: true,
-        owner: true,
-        givenBy: userId
-      }];
+      permissions = {
+        readWrite: [{
+          type: "user",
+          date: new Date(),
+          id: userId,
+          inherited: false
+        }],
+        readOnly: []
+      };
     }
 
     var newNode = {
@@ -76,31 +76,16 @@ NodeTrustedApi = {
 
     return newId;
   },
-
-  removeNode: function (nodeId, auth) {
+  removeNode: function (nodeId, userId) {
     check(nodeId, String);
-    check(auth, {
-      userId: Match.Optional(String),
-      token: Match.Optional(String)
-    });
+    check(userId, String);
 
     var node = Nodes.findOne(nodeId);
-
-    var permQuery = { write: true };
-    if (auth.userId) {
-      permQuery.userId = auth.userId;
-    } else if (auth.token) {
-      permQuery.token = auth.token;
-    } else {
-      throw new Error("need userId or token");
-    }
 
     // Remove the node from the database
     var numRemoved = Nodes.remove({
       _id: nodeId,
-      permissions: {
-        $elemMatch: permQuery
-      }
+      "permissions.readWrite.id": userId
     });
 
     // Technically, this error can happen for two reasons - the node doesn't
@@ -116,7 +101,7 @@ NodeTrustedApi = {
     // XXX if we implement multiple parents, this code will delete too many
     // nodes sometimes
     _.each(node.children, function (child) {
-      NodeTrustedApi.removeNode(child._id, auth);
+      NodeTrustedApi.removeNode(child._id, userId);
     });
   },
   collapseNode: function (nodeId, userId) {
@@ -217,26 +202,48 @@ NodeTrustedApi = {
         
         // First, take all of the permissions of the new parent
         var newParentPerms = NodeTrustedApi._markPermissionsInherited(newParent.permissions);
-        var inheritedPerms = _.where(node.permissions, {inherited: true});
+        var inheritedPerms = {
+          readOnly: _.where(node.permissions.readOnly, {inherited: true}),
+          readWrite: _.where(node.permissions.readWrite, {inherited: true})
+        };
 
-        var permsToAdd = permDifference(newParentPerms, inheritedPerms);
-        var permsToRemove = permDifference(inheritedPerms, newParentPerms);
+        var readOnlyPermsToAdd = permDifference(newParentPerms.readOnly,
+          inheritedPerms.readOnly);
+        var readWritePermsToAdd = permDifference(newParentPerms.readWrite,
+          inheritedPerms.readWrite);
+
+        var readOnlyPermsToRemove = permDifference(inheritedPerms.readOnly,
+          newParentPerms.readOnly);
+        var readWritePermsToRemove = permDifference(inheritedPerms.readWrite,
+          newParentPerms.readWrite);
 
         // this is the modifier that we need to apply to this node and all
         // of its children recursively to fix up the permissions
         var pushModifier = {
-          $pushAll: {
-            permissions: permsToAdd
-          }
+          $pushAll: {}
         };
+
+        if (! _.isEmpty(readOnlyPermsToAdd)) {
+          pushModifier.$pushAll["permissions.readOnly"] = readOnlyPermsToAdd;
+        }
+
+        if (! _.isEmpty(readWritePermsToAdd)) {
+          pushModifier.$pushAll["permissions.readWrite"] = readWritePermsToAdd;
+        }
 
         // We can't both pull and push in the same operation due to a mongo
         // limitation
         var pullModifier = {
-          $pullAll: {
-            permissions: permsToRemove
-          }
+          $pullAll: {}
         };
+
+        if (! _.isEmpty(readOnlyPermsToRemove)) {
+          pullModifier.$pullAll["permissions.readOnly"] = readOnlyPermsToRemove;
+        }
+
+        if (! _.isEmpty(readWritePermsToRemove)) {
+          pullModifier.$pullAll["permissions.readWrite"] = readWritePermsToRemove;
+        }
 
         // Pull the trigger
         applyToNodeRecusively(node, pushModifier);
@@ -303,35 +310,25 @@ NodeTrustedApi = {
     check(userId, String);
 
     var permissionToken = {
-      token: token,
+      id: token,
+      type: "token",
       date: new Date(),
-      inherited: false,
-      read: true,
-      owner: false,
-      write: writeable,
-      givenBy: userId
+      inherited: false
     };
 
-    NodeTrustedApi._shareNodeToId(nodeId, permissionToken, userId);
+    NodeTrustedApi._shareNodeToId(nodeId, permissionToken, writeable, userId);
   },
 
-  _shareNodeToId: function (nodeId, permissionToken, userId) {
-    check(permissionToken, Nodes.permissionMatchPattern);
-
+  _shareNodeToId: function (nodeId, permissionToken, writeable, userId) {
     var node = Nodes.findOne(nodeId);
     var numUpdated;
 
-    if (permissionToken.level === "readWrite") {
+    if (writeable) {
       numUpdated = Nodes.update({
         _id: nodeId,
-        permissions: {
-          $elemMatch: {
-            userId: userId,
-            write: true
-          }
-        }
-      }, { $addToSet: {
-        permissions: permissionToken
+        "permissions.readWrite.id": userId
+      }, {$addToSet: {
+        "permissions.readWrite": permissionToken
       } });
 
       if (numUpdated === 0) {
@@ -340,14 +337,12 @@ NodeTrustedApi = {
     } else {
       numUpdated = Nodes.update({
         _id: nodeId,
-        permissions: {
-          $elemMatch: {
-            userId: userId,
-            read: true
-          }
-        }
+        $or: [
+          { "permissions.readWrite.id": userId },
+          { "permissions.readOnly.id": userId }
+        ]
       }, {$addToSet: {
-        permissions: permissionToken
+        "permissions.readOnly": permissionToken
       } });
 
       if (numUpdated === 0) {
@@ -358,7 +353,7 @@ NodeTrustedApi = {
     _.each(node.children, function (child) {
       // All children get inherited permissions from this node
       permissionToken.inherited = true;
-      NodeTrustedApi._shareNodeToId(child._id, permissionToken, userId);
+      NodeTrustedApi._shareNodeToId(child._id, permissionToken, writeable, userId);
     });
   },
 
@@ -369,6 +364,9 @@ NodeTrustedApi = {
     };
 
     // Set inherited to true on all permissions
-    return _.map(permissionsField, makeInheritedTrue);
+    permissionsField.readWrite = _.map(permissionsField.readWrite, makeInheritedTrue);
+    permissionsField.readOnly = _.map(permissionsField.readOnly, makeInheritedTrue);
+
+    return permissionsField;
   }
 };
