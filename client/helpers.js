@@ -1,3 +1,13 @@
+var getHashCode = function(str) {
+  var hash = 0;
+  if (str.length == 0) return hash;
+  for (var i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+      hash = hash & hash; // Convert to 32bit integer
+  }
+  return hash;
+};
+
 Template.node.helpers({
   indent: function () {
     return 20;
@@ -7,7 +17,7 @@ Template.node.helpers({
     return this._id === Session.get("contextMenuNodeId");
   },
 
-  getEditorDeindent: function() {
+  getEditorDeindent: function () {
     var node = this;
     var root = Nodes.findOne(Session.get("rootNodeId"));
     var depth = 0;
@@ -18,6 +28,12 @@ Template.node.helpers({
     }
 
     return -48 * depth;
+  },
+
+  generatedColor: function () {
+    var h = getHashCode(this.createdBy._id) % 360;
+
+    return "hsl(" + h + ", 80%, 50%)";
   }
 });
 

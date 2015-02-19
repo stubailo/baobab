@@ -29,7 +29,8 @@
 <template name="node">
   <div class="item">
     <div class="bullet">
-      <div class="editor" style="left:{{getEditorDeindent}}px"></div>
+      <div class="editor" style="left:{{getEditorDeindent}}px; border-color: {{generatedColor}}; color: {{generatedColor}}">
+        <span>{{createdBy.username}}</span></div>
       <a class="zoom" href="/{{_id}}">&mapstoup;</a>
       <div class="arrow{{getArrowIconClasses}}"></div>
       <div class="input" contentEditable></div>

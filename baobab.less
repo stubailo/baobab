@@ -21,16 +21,28 @@ div.item {
 @indent: 27px;
 
 /* Show indentation levels with vertical lines */
-div.item:first-of-type .item  {
+div.item .item  {
   margin-left: @indent;
   border-left: #ddd solid 1px;
 }
 
 .editor {
-  width: 20px;
-  height: 20px;
-  background: blue;
+  top: 2px;
+  bottom: 2px;
   position: absolute;
+  margin-left: -50px;
+  border-left: 3px solid;
+  padding-left: 5px;
+  font-size: 0.9em;
+  width: 50px;
+
+  span {
+    opacity: 0;
+  }
+
+  &:hover span {
+    opacity: 1;
+  }
 }
 
 .input {
