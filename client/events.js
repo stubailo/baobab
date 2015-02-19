@@ -294,15 +294,28 @@ function indexOfNode(node) {
 }
 
 Template.node.rendered = function() {
-  var node = this.data;
+  var template = this;
+  var node = template.data;
   if (! node) {
     return;
   }
 
-  this.find(".input").innerHTML = node.content;
-
   var nodeID = node._id;
-  templatesByNodeID[nodeID] = this;
+  Tracker.autorun(function() {
+    var node = Nodes.findOne(nodeID);
+    if (node) {
+      var input = template.find(".input");
+      if (document.activeElement !== input) {
+        input.innerHTML = node.content;
+      }
+    }
+  });
+
+  // Set the content at least once, when the node is first rendered,
+  // regardless of whether the node is focused.
+  template.find(".input").innerHTML = node.content;
+
+  templatesByNodeID[nodeID] = template;
   refocus();
 };
 
