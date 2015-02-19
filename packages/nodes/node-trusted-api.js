@@ -138,12 +138,9 @@ NodeTrustedApi = {
   updateNodeContent: function (nodeId, newContent, userId) {
     check(newContent, String);
 
-<<<<<<< HEAD
     var user = Meteor.users.findOne(userId);
 
-=======
     var now = new Date;
->>>>>>> Add locking mechanism. Also, allow selected field to update if the window doesn't have focus
     var updated = Nodes.update({
       _id: nodeId,
       "permissions.readWrite.id": userId,
