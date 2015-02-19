@@ -26,13 +26,16 @@ function deleteMarkers(input) {
   }
 }
 
-function insertMarkers(node, input) {
+function insertMarkers(node) {
   if (_.has(recordedSelectionsByID, node._id)) {
-    deleteMarkers(input);
+    var input = getTemplateByNodeID(node._id).find(".input");
     var range = recordedSelectionsByID[node._id];
     var startMarker = document.createElement("marker");
     var endMarker = document.createElement("marker");
     var endRange = range.cloneRange();
+
+    deleteMarkers(input);
+
     endRange.collapse(false); // Collapse to end.
     range.collapse(true); // Collapse to start.
     range.insertNode(startMarker);
@@ -51,7 +54,7 @@ Template.node.events({
   },
 
   "blur .input": function(event, template) {
-    insertMarkers(this, event.target);
+    insertMarkers(this);
     event.stopPropagation();
   },
 
@@ -201,7 +204,7 @@ Template.node.events({
         var grandparent = parent && parent.getParent();
         if (grandparent) {
           // Move the node to the next sibling of its parent.
-          insertMarkers(node, input);
+          insertMarkers(node);
           node.moveTo(grandparent._id, parent._id);
           refocus(node);
         }
@@ -211,7 +214,7 @@ Template.node.events({
 
       var ps = node.getPreviousSibling();
       if (ps) {
-        insertMarkers(node, input);
+        insertMarkers(node);
 
         var newPrevSibling = ps.getLastChild();
         if (newPrevSibling) {
