@@ -104,8 +104,7 @@ Nodes.insertNode = function (content, parentNodeId, previousNodeId) {
 };
 
 Nodes.permissionMatchPattern = {
-  userId: Match.Optional(String),
-  token: Match.Optional(String),
+  userIdOrToken: String,
   date: Date,
   inherited: Boolean,
   read: Boolean,

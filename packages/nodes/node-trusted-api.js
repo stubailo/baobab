@@ -15,20 +15,20 @@ var permDifference = function (left, right) {
   var dictionaryOfRight = {};
 
   _.each(right, function (perm) {
-    dictionaryOfRight[perm.userId + perm.token + perm.date] = perm;
+    dictionaryOfRight[perm.userIdOrToken + perm.date] = perm;
   });
 
   return _.filter(left, function (perm) {
-    return ! _.has(dictionaryOfRight, perm.userId + perm.token + perm.date);
+    return ! _.has(dictionaryOfRight, perm.userIdOrToken + perm.date);
   });
 };
 
 NodeTrustedApi = {
-  insertNode: function (content, newId, parentNodeId, order, userId) {
+  insertNode: function (content, newId, parentNodeId, order, authTokenOrUserId, identityUserId) {
     var parent;
     if (parentNodeId) {
       parent = Nodes.findOne(parentNodeId);
-      if (! parent.isWriteableByUser(userId)) {
+      if (! parent.isWriteableByUser(authTokenOrUserId)) {
         throw new Meteor.Error("parent-permission-denied");
       }
     }
@@ -39,12 +39,12 @@ NodeTrustedApi = {
     } else {
       permissions = [{
         date: new Date(),
-        userId: userId,
+        userIdOrToken: authTokenOrUserId,
         inherited: false,
         read: true,
         write: true,
         owner: true,
-        givenBy: userId
+        givenBy: authTokenOrUserId
       }];
     }
 
@@ -52,8 +52,8 @@ NodeTrustedApi = {
       _id: newId,
       content: content,
       children: [],
-      createdBy: userId,
-      updatedBy: [userId],
+      createdBy: identityUserId,
+      updatedBy: [identityUserId],
       createdAt: new Date(),
       updatedAt: new Date(),
       collapsedBy: {},
@@ -77,29 +77,20 @@ NodeTrustedApi = {
     return newId;
   },
 
-  removeNode: function (nodeId, auth) {
+  removeNode: function (nodeId, authTokenOrUserId) {
     check(nodeId, String);
-    check(auth, {
-      userId: Match.Optional(String),
-      token: Match.Optional(String)
-    });
+    check(authTokenOrUserId, String);
 
     var node = Nodes.findOne(nodeId);
-
-    var permQuery = { write: true };
-    if (auth.userId) {
-      permQuery.userId = auth.userId;
-    } else if (auth.token) {
-      permQuery.token = auth.token;
-    } else {
-      throw new Error("need userId or token");
-    }
 
     // Remove the node from the database
     var numRemoved = Nodes.remove({
       _id: nodeId,
       permissions: {
-        $elemMatch: permQuery
+        $elemMatch: {
+          userIdOrToken: authTokenOrUserId,
+          write: true
+        }
       }
     });
 
@@ -116,7 +107,7 @@ NodeTrustedApi = {
     // XXX if we implement multiple parents, this code will delete too many
     // nodes sometimes
     _.each(node.children, function (child) {
-      NodeTrustedApi.removeNode(child._id, auth);
+      NodeTrustedApi.removeNode(child._id, authTokenOrUserId);
     });
   },
   collapseNode: function (nodeId, userId) {
@@ -133,15 +124,18 @@ NodeTrustedApi = {
 
     Nodes.update(nodeId, {$unset: fieldToUnset});
   },
-  updateNodeContent: function (nodeId, newContent, userId) {
+  updateNodeContent: function (nodeId, newContent, authTokenOrUserId, identityUserId) {
     check(newContent, String);
+    check(nodeId, String);
+    check(authTokenOrUserId, String);
+    check(identityUserId, Match.Optional(String));
 
     var updated = Nodes.update({
       _id: nodeId,
       permissions: {
         $elemMatch: {
           write: true,
-          userId: userId
+          userIdOrToken: authTokenOrUserId
         }
       }
     }, {
@@ -150,7 +144,7 @@ NodeTrustedApi = {
         updatedAt: new Date()
       },
       $addToSet: {
-        updatedBy: userId
+        updatedBy: identityUserId
       }
     });
 
@@ -158,11 +152,11 @@ NodeTrustedApi = {
       throw new Meteor.Error("permission-denied");
     }
   },
-  moveNode: function (nodeId, newParentNodeId, previousNodeId, userId) {
+  moveNode: function (nodeId, newParentNodeId, previousNodeId, authTokenOrUserId) {
     check(nodeId, String);
     check(newParentNodeId, String);
     check(previousNodeId, Match.Optional(Match.OneOf(String, null)));
-    check(userId, String);
+    check(authTokenOrUserId, String);
 
     if (nodeId === previousNodeId) {
       throw new Meteor.Error("node-same-as-previous-node");
@@ -198,12 +192,12 @@ NodeTrustedApi = {
     // Make sure we have permissions to write to both the new parent and
     // the node we are moving
     var node = Nodes.findOne(nodeId);
-    if (! node.isWriteableByUser(userId)) {
+    if (! node.isWriteableByUser(authTokenOrUserId)) {
       throw new Meteor.Error("node-permission-denied");
     }
 
     var parent = node.getParent();
-    if (! parent.isWriteableByUser(userId)) {
+    if (! parent.isWriteableByUser(authTokenOrUserId)) {
       throw new Meteor.Error("parent-permission-denied");
     }
 
@@ -308,7 +302,7 @@ NodeTrustedApi = {
     check(userId, String);
 
     var permissionToken = {
-      token: token,
+      userIdOrToken: token,
       date: new Date(),
       inherited: false,
       read: true,
@@ -326,12 +320,12 @@ NodeTrustedApi = {
     var node = Nodes.findOne(nodeId);
     var numUpdated;
 
-    if (permissionToken.level === "readWrite") {
+    if (permissionToken.write) {
       numUpdated = Nodes.update({
         _id: nodeId,
         permissions: {
           $elemMatch: {
-            userId: userId,
+            userIdOrToken: userId,
             write: true
           }
         }
@@ -347,7 +341,7 @@ NodeTrustedApi = {
         _id: nodeId,
         permissions: {
           $elemMatch: {
-            userId: userId,
+            userIdOrToken: userId,
             read: true
           }
         }
