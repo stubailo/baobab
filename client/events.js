@@ -95,6 +95,16 @@ Template.node.events({
   "mouseup .input": recordSelection,
   "mouseout .input": recordSelection,
 
+  "keyup .input": function (event) {
+    //non-printing keys include ctrl, arrows, tab, etc.
+    var nonPrintingKeys = _.range(9, 28).concat(_.range(33, 41).concat(91));
+
+    if (! _.contains(nonPrintingKeys, event.which))
+      this.updateContent(event.target.innerHTML);
+
+    return false;
+  },
+
   "keydown .input": function (event) {
     var node = this;
     var input = event.target;
@@ -102,7 +112,6 @@ Template.node.events({
     recordSelection.apply(this, arguments);
 
     // TODO Debounce this?
-    node.updateContent(input.innerHTML);
 
     if (event.which === 13) { // enter
       if (! event.shiftKey) {
