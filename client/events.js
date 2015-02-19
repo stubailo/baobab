@@ -1,5 +1,4 @@
 var focusedNode = null;
-var templatesByNodeID = {};
 
 Session.setDefault("contextMenuNodeId", null);
 
@@ -159,8 +158,9 @@ Template.node.events({
             if (container === input) {
               var ps = node.getPreviousSibling();
               if (ps && ps.children.length === 0) {
-                if (_.has(templatesByNodeID, ps._id)) {
-                  var prevInput = templatesByNodeID[ps._id].find(".input");
+                var template = getTemplateByNodeID(ps._id);
+                if (template) {
+                  var prevInput = template.find(".input");
                   var dummySpan = document.createElement("span");
 
                   prevInput.appendChild(dummySpan);
@@ -252,9 +252,9 @@ function recordSelection(event) {
 
 function refocus(newFocusedNode) {
   focusedNode = newFocusedNode || focusedNode;
+  var template = focusedNode && getTemplateByNodeID(focusedNode._id);
 
-  if (focusedNode && _.has(templatesByNodeID, focusedNode._id)) {
-    var template = templatesByNodeID[focusedNode._id];
+  if (template) {
     var input = template.find(".input");
 
     var markers = input.getElementsByTagName("marker");
@@ -293,6 +293,14 @@ function indexOfNode(node) {
   return result;
 }
 
+var templatesByNodeID = {};
+function getTemplateByNodeID(nodeID) {
+  if (_.has(templatesByNodeID, nodeID)) {
+    return templatesByNodeID[nodeID];
+  }
+  return null;
+}
+
 Template.node.rendered = function() {
   var template = this;
   var node = template.data;
@@ -301,14 +309,16 @@ Template.node.rendered = function() {
   }
 
   var nodeID = node._id;
-  Tracker.autorun(function() {
+  template.contentComputation = Tracker.autorun(function(computation) {
+    var template = getTemplateByNodeID(nodeID);
     var node = Nodes.findOne(nodeID);
-    if (node) {
+    if (template && template.data === node) {
       var input = template.find(".input");
       if (document.activeElement !== input) {
         input.innerHTML = node.content;
       }
     }
+    return computation;
   });
 
   // Set the content at least once, when the node is first rendered,
@@ -324,6 +334,9 @@ Template.node.destroyed = function() {
   if (! this.data) {
     return;
   }
+
+  this.contentComputation.stop();
+  console.log("stopping", this.contentComputation);
 
   delete templatesByNodeID[this.data._id];
 };
