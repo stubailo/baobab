@@ -24,7 +24,7 @@ var permDifference = function (left, right) {
 };
 
 NodeTrustedApi = {
-  insertNode: function (content, newId, parentNodeId, order, userId) {
+  insertNode: function (content, newId, parentNodeId, order, userId, username) {
     var parent;
     if (parentNodeId) {
       parent = Nodes.findOne(parentNodeId);
@@ -48,12 +48,28 @@ NodeTrustedApi = {
       };
     }
 
+    var user;
+    if (username) {
+      user = {
+        username: username,
+        _id: userId
+      };
+    } else {
+      user = Meteor.users.findOne(userId);
+    }
+
     var newNode = {
       _id: newId,
       content: content,
       children: [],
-      createdBy: userId,
-      updatedBy: [userId],
+      createdBy: {
+        _id: user._id,
+        username: user.username
+      },
+      updatedBy: [{
+        _id: user._id,
+        username: user.username
+      }],
       createdAt: new Date(),
       updatedAt: new Date(),
       collapsedBy: {},
@@ -121,6 +137,8 @@ NodeTrustedApi = {
   updateNodeContent: function (nodeId, newContent, userId) {
     check(newContent, String);
 
+    var user = Meteor.users.findOne(userId);
+
     var updated = Nodes.update({
       _id: nodeId,
       "permissions.readWrite.id": userId
@@ -130,7 +148,10 @@ NodeTrustedApi = {
         updatedAt: new Date()
       },
       $addToSet: {
-        updatedBy: userId
+        updatedBy: {
+          _id: user._id,
+          username: user.username
+        }
       }
     });
 

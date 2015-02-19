@@ -114,10 +114,16 @@ Nodes.matchPattern = {
   updatedAt: Date,
 
   // The user id who first created this node
-  createdBy: String,
+  createdBy: {
+    _id: String,
+    username: String
+  },
 
   // A list of all user ids that have ever edited this node
-  updatedBy: [String],
+  updatedBy: [{
+    _id: String,
+    username: String
+  }],
 
   // The user who is currently editing this node, locking it
   lockedBy: Match.Optional(String),
