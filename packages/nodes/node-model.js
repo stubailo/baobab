@@ -164,17 +164,10 @@ _.extend(NodeModel.prototype, {
     Meteor.call("moveNode", this._id, newParentNodeId, previousNodeId);
   },
   isWriteableByUser: function (userId) {
-    return !! _.findWhere(this.permissions.readWrite, {id: userId});
-  },
-  isReadableByUser: function (userId) {
-    return isWriteableByCurrentUser() ||
-      !! _.findWhere(this.permissions.readOnly, {id: userId});
+    return !! _.findWhere(this.permissions, {userId: userId, write: true});
   },
   isWriteableByCurrentUser: function () {
     this.isWriteableByUser(Meteor.userId());
-  },
-  isReadableByCurrentUser: function () {
-    this.isReadableByUser(Meteor.userId());
   },
   generateShareUrl: function (writeable) {
     var existingShareUrl = this.getShareUrl(writeable);

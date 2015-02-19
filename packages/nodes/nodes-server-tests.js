@@ -57,8 +57,8 @@ Tinytest.add('insertNode', function (test) {
         node.permissions);
     } else {
       // If there is no parent this is a root node
-      test.isTrue(_.isEmpty(node.permissions.readOnly));
-      test.equal(node.permissions.readWrite.length, 1);
+      test.isFalse(_.findWhere(node.permissions, {level: "readOnly"}));
+      test.equal(node.permissions.length, 1);
     }
 
     _.each(node.getOrderedChildren(), recursivelyAddContentAndCheck);
@@ -94,14 +94,14 @@ Tinytest.add('removeNode', function (test) {
   test.equal(Nodes.find().count(), 6);
 
   var fNodeId = Nodes.findOne({content: "f"})._id;
-  NodeTrustedApi.removeNode(fNodeId, userId);
+  NodeTrustedApi.removeNode(fNodeId, {userId: userId});
 
   // The whole subtree should be removed, leaving us with 3 nodes
   test.equal(Nodes.find().count(), 3);
 
   // Make sure some random user can't remove it!
   test.throws(function () {
-    NodeTrustedApi.removeNode(fNodeId, "fakeuserid");
+    NodeTrustedApi.removeNode(fNodeId, {userId: "fakeuserid"});
   });
 });
 
@@ -134,7 +134,7 @@ Tinytest.add('sharing nodes', function (test) {
 
   // Make sure some random user can't remove it!
   test.throws(function () {
-    NodeTrustedApi.removeNode(fNodeId, "fakeuserid");
+    NodeTrustedApi.removeNode(fNodeId, {userId: "fakeuserid"});
   });
 
   // Share the node
@@ -143,11 +143,11 @@ Tinytest.add('sharing nodes', function (test) {
 
   // Now remove a subnode using the share token as the permission
   var dNodeId = Nodes.findOne({content: "d"})._id;
-  NodeTrustedApi.removeNode(dNodeId, shareToken);
+  NodeTrustedApi.removeNode(dNodeId, {token: shareToken});
   test.equal(Nodes.find().count(), 5);
 
   // Now remove the subtree using the share token as the permission
-  NodeTrustedApi.removeNode(fNodeId, shareToken);
+  NodeTrustedApi.removeNode(fNodeId, {token: shareToken});
   test.equal(Nodes.find().count(), 3);
 });
 
@@ -193,14 +193,13 @@ Tinytest.add('moving nodes with complex permissions', function (test) {
 
     // Make sure there are no extra permissions. We need to add 1 because each
     // node additionally has permissions for userId
-    test.equal(node.permissions.readWrite.length,
-      expectedPermissions.length + 1);
+    test.equal(node.permissions.length, expectedPermissions.length + 1);
 
     _.each(expectedPermissions, function (letter) {
       var token = tokens[letter];
 
       // Make sure all of the permissions we are looking for are there
-      test.isTrue(_.findWhere(node.permissions.readWrite, {id: token}));
+      test.isTrue(_.findWhere(node.permissions, {token: token}));
     });
   };
 
