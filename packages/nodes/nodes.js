@@ -126,7 +126,7 @@ Nodes.matchPattern = {
   }],
 
   // The user who is currently editing this node, locking it
-  lockedBy: Match.Optional(String),
+  lockedBy: Match.OneOf(String, null),
 
   // An object where the keys are user ids and the value is true if they have
   // collapsed this node

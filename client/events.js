@@ -99,8 +99,9 @@ Template.node.events({
     //non-printing keys include ctrl, arrows, tab, etc.
     var nonPrintingKeys = _.range(9, 28).concat(_.range(33, 41).concat(91));
 
-    if (! _.contains(nonPrintingKeys, event.which))
+    if (! _.contains(nonPrintingKeys, event.which)) {
       this.updateContent(event.target.innerHTML);
+    }
 
     return false;
   },
@@ -326,7 +327,7 @@ Template.node.rendered = function() {
     var node = Nodes.findOne(nodeID);
     if (node) {
       var input = template.find(".input");
-      if (firstTime || document.activeElement !== input) {
+      if (firstTime || document.activeElement !== input || (! document.hasFocus())) {
         if (nodeID === "KSHFmtsFWwe2P55jM" &&
             node.content.match(/asdf/)) {
           console.log(input, node);

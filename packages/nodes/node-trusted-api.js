@@ -73,7 +73,8 @@ NodeTrustedApi = {
       createdAt: new Date(),
       updatedAt: new Date(),
       collapsedBy: {},
-      permissions: permissions
+      permissions: permissions,
+      lockedBy: null
     };
 
     check(newNode, Nodes.matchPattern);
@@ -137,15 +138,25 @@ NodeTrustedApi = {
   updateNodeContent: function (nodeId, newContent, userId) {
     check(newContent, String);
 
+<<<<<<< HEAD
     var user = Meteor.users.findOne(userId);
 
+=======
+    var now = new Date;
+>>>>>>> Add locking mechanism. Also, allow selected field to update if the window doesn't have focus
     var updated = Nodes.update({
       _id: nodeId,
-      "permissions.readWrite.id": userId
+      "permissions.readWrite.id": userId,
+      $or: [{
+          lockedBy: {$in: [userId, null]}
+        }, {
+          updatedAt: {$lt: (new Date - Settings.lockDuration)}
+      }]
     }, {
       $set: {
         content: newContent,
-        updatedAt: new Date()
+        updatedAt: now,
+        lockedBy: userId
       },
       $addToSet: {
         updatedBy: {
@@ -156,7 +167,13 @@ NodeTrustedApi = {
     });
 
     if (updated === 0) {
-      throw new Meteor.Error("permission-denied");
+      throw new Meteor.Error("locked-or-permission-denied");
+    } else {
+      if (Meteor.isServer) {
+        Meteor.setTimeout(function () {
+          NodeTrustedApi.unlockNode(nodeId, now);
+        }, Settings.lockDuration);
+      }
     }
   },
   moveNode: function (nodeId, newParentNodeId, previousNodeId, userId) {
@@ -386,5 +403,16 @@ NodeTrustedApi = {
     permissionsField.readOnly = _.map(permissionsField.readOnly, makeInheritedTrue);
 
     return permissionsField;
-  }
+  },
+
+  unlockNode: function (nodeId, when) {
+    // unlock only if the time passed in matches (otherwise, the user updated again
+    // more recently, and we should wait for the last unlock call.)
+    Nodes.update({
+      _id: nodeId,
+      updatedAt: when
+    }, {
+      $set: {lockedBy: null}
+    });
+  } 
 };
