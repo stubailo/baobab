@@ -307,28 +307,30 @@ function refocus(newFocusedNode) {
 
   if (template) {
     var input = template.find(".input");
-
     var markers = input.getElementsByTagName("marker");
+
+    while (markers.length > 2) {
+      var lastMarker = markers.item(markers.length - 1);
+      lastMarker.parentNode.removeChild(lastMarker);
+    }
+
     if (markers.length === 2) {
       var startMarker = markers.item(0);
       var endMarker = markers.item(1);
 
-      console.log(startMarker, endMarker);
+      var selection = window.getSelection();
+      selection.removeAllRanges();
 
-      if (startMarker && input.contains(startMarker) &&
-          endMarker && input.contains(endMarker)) {
-        var selection = window.getSelection();
-        selection.removeAllRanges();
+      var startContainer = startMarker.parentNode;
+      var startOffset = indexOfNode(startMarker);
+      startContainer.removeChild(startMarker);
 
-        var startContainer = startMarker.parentNode;
-        var startOffset = indexOfNode(startMarker);
+      var endContainer = endMarker.parentNode;
+      var endOffset = indexOfNode(endMarker);
+      endContainer.removeChild(endMarker);
 
-        var endContainer = endMarker.parentNode;
-        var endOffset = indexOfNode(endMarker);
-
-        selection.collapse(startContainer, startOffset);
-        selection.extend(endContainer, endOffset);
-      }
+      selection.collapse(startContainer, startOffset);
+      selection.extend(endContainer, endOffset);
     }
 
     input.focus();
@@ -353,24 +355,22 @@ function getTemplateByNodeID(nodeID) {
 }
 
 Template.node.rendered = function() {
-  var template = this;
-  var node = template.data;
+  var node = this.data;
   if (! node) {
     return;
   }
 
   var nodeID = node._id;
   var firstTime = true;
-  template.contentComputation = Tracker.autorun(function(computation) {
+
+  templatesByNodeID[nodeID] = this;
+
+  this.contentComputation = Tracker.autorun(function(computation) {
+    var template = getTemplateByNodeID(nodeID);
     var node = Nodes.findOne(nodeID);
     if (node) {
       var input = template.find(".input");
       if (firstTime || document.activeElement !== input || (! document.hasFocus())) {
-        if (nodeID === "KSHFmtsFWwe2P55jM" &&
-            node.content.match(/asdf/)) {
-          console.log(input, node);
-          debugger;
-        }
         input.innerHTML = node.content;
       }
     }
@@ -378,7 +378,6 @@ Template.node.rendered = function() {
     return computation;
   });
 
-  templatesByNodeID[nodeID] = template;
   refocus();
 };
 
@@ -389,7 +388,6 @@ Template.node.destroyed = function() {
   }
 
   this.contentComputation.stop();
-  console.log("stopping", this.contentComputation);
 
   delete templatesByNodeID[this.data._id];
 };
