@@ -8,6 +8,12 @@ var getHashCode = function(str) {
   return hash;
 };
 
+Template.tree.helpers({
+  getHTMLContent: function() {
+    return new Spacebars.SafeString(this.content);
+  }
+});
+
 Template.node.helpers({
   indent: function () {
     return 20;
