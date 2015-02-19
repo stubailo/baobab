@@ -2,12 +2,10 @@ if (Meteor.isServer) {
   Meteor.publish('nodes', function () {
     if (this.userId) {
       return Nodes.find({
-        permissions: {
-          $elemMatch: {
-            read: true,
-            userId: this.userId
-          }
-        }
+        $or: [
+          {"permissions.readWrite.id": this.userId},
+          {"permissions.readOnly.id": this.userId}
+        ]
       });
     }
   });
@@ -15,12 +13,10 @@ if (Meteor.isServer) {
   Meteor.publish('nodesTokenAuth', function (token) {
     if (token) {
       return Nodes.find({
-        permissions: {
-          $elemMatch: {
-            read: true,
-            token: token
-          }
-        }
+        $or: [
+          {"permissions.readWrite.id": token},
+          {"permissions.readOnly.id": token}
+        ]
       });
     }
   });

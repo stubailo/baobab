@@ -28,5 +28,4 @@ Package.onTest(function(api) {
   api.use(['tinytest', 'accounts-password', 'random', 'check']);
   api.use('nodes');
   api.addFiles('nodes-server-tests.js', "server");
-  api.addFiles('nodes-client-tests.js', "client");
 });
