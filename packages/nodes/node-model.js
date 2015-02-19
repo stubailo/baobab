@@ -160,7 +160,6 @@ _.extend(NodeModel.prototype, {
     Meteor.call("expandNode", this._id);
   },
   moveTo: function (newParentNodeId, previousNodeId) {
-    console.log("move to called", previousNodeId);
     Meteor.call("moveNode", this._id, newParentNodeId, previousNodeId);
   },
   isWriteableByUser: function (userId) {

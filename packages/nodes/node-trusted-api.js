@@ -138,7 +138,12 @@ NodeTrustedApi = {
 
     var updated = Nodes.update({
       _id: nodeId,
-      "permissions.readWrite.id": userId
+      permissions: {
+        $elemMatch: {
+          write: true,
+          userId: userId
+        }
+      }
     }, {
       $set: {
         content: newContent,
