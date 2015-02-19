@@ -18,10 +18,19 @@ div.item {
   width: 80%;
 }
 
+@indent: 27px;
+
 /* Show indentation levels with vertical lines */
 div.item:first-of-type .item  {
-  margin-left: 27px;
+  margin-left: @indent;
   border-left: #ddd solid 1px;
+}
+
+.editor {
+  width: 20px;
+  height: 20px;
+  background: blue;
+  position: absolute;
 }
 
 .input {
