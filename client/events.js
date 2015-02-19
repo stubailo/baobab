@@ -37,13 +37,11 @@ function insertMarkers(node, input) {
     range.collapse(true); // Collapse to start.
     range.insertNode(startMarker);
     endRange.insertNode(endMarker);
+
+    // TODO Debounce this?
     node.updateContent(input.innerHTML);
   }
 }
-
-var updateText = _.debounce(function(node, input) {
-  node.updateContent(input.innerHTML);
-}, 200);
 
 Template.node.events({
   "focus .input": function(event, template) {
@@ -100,7 +98,8 @@ Template.node.events({
 
     recordSelection.apply(this, arguments);
 
-    updateText(node, input);
+    // TODO Debounce this?
+    node.updateContent(input.innerHTML);
 
     if (event.which === 13) { // enter
       if (! event.shiftKey) {
@@ -173,7 +172,8 @@ Template.node.events({
                   selection.collapse(dummySpan, 0);
                   prevInput.removeChild(dummySpan);
 
-                  updateText(ps, prevInput);
+                  // TODO Debounce this?
+                  ps.updateContent(prevInput.innerHTML);
 
                 } else {
                   node.remove();
