@@ -160,54 +160,68 @@ Template.node.events({
 
     } else if (event.which === 8) { // delete
       var selection = window.getSelection();
-      if (selection.rangeCount === 1) {
-        var range = selection.getRangeAt(0);
-        var container = range.startContainer;
-        if (range.endContainer === container &&
-            range.startOffset === 0 &&
-            range.endOffset === 0) {
-          while (container) {
-            if (container === input) {
-              var ps = node.getPreviousSibling();
-              if (ps && ps.children.length === 0) {
-                var template = getTemplateByNodeID(ps._id);
-                if (template) {
-                  var prevInput = template.find(".input");
-                  var dummySpan = document.createElement("span");
 
-                  prevInput.appendChild(dummySpan);
-                  while (input.firstChild) {
-                    prevInput.appendChild(input.firstChild);
-                  }
+      for (var i = 0; i < selection.rangeCount; ++i) {
+        var range = selection.getRangeAt(i);
+        if (!input.contains(range.startContainer)) {
+          continue;
+        }
 
-                  node.remove();
-                  focusedNode = ps;
-                  selection.collapse(dummySpan, 0);
-                  prevInput.removeChild(dummySpan);
+        // Select all content from beginning of input so we can check if
+        // the text is all whitespace.
+        range = range.cloneRange();
+        range.collapse(false); // Collapse to end.
+        range.setStart(input, 0);
 
-                  // TODO Debounce this?
-                  ps.updateContent(prevInput.innerHTML);
+        if (range.toString().match(/\S/)) {
+          // If there is any non-whitespace text before the end of the
+          // cursor, then don't consider deleting this node.
+          continue;
+        }
 
-                } else {
-                  node.remove();
-                  refocus(ps);
-                }
+        if (node.children.length > 0) {
+          // Can't delete nodes that have children. This is a little
+          // different from Workflowy, which allows you to delete nodes that
+          // have empty children.
+          continue;
+        }
 
-              } else if (!node.content.match(/\S/)) {
-                var pn = node.getPrecedingNode();
-                if (pn) {
-                  node.remove();
-                  refocus(pn);
-                }
-              }
+        var ps = node.getPreviousSibling();
+        if (ps && ps.children.length === 0) {
+          var template = getTemplateByNodeID(ps._id);
+          if (template) {
+            var prevInput = template.find(".input");
+            var dummySpan = document.createElement("span");
 
-              return false;
+            prevInput.appendChild(dummySpan);
+            while (input.firstChild) {
+              prevInput.appendChild(input.firstChild);
             }
 
-            container = container.parentNode;
+            node.remove();
+            focusedNode = ps;
+            selection.collapse(dummySpan, 0);
+            prevInput.removeChild(dummySpan);
+
+            // TODO Debounce this?
+            ps.updateContent(prevInput.innerHTML);
+
+          } else {
+            node.remove();
+            refocus(ps);
+          }
+
+        } else if (!node.content.match(/\S/)) {
+          var pn = node.getPrecedingNode();
+          if (pn) {
+            node.remove();
+            refocus(pn);
           }
         }
+
+        return false;
       }
+
     } else if (event.which === 9) { // tab
       if (event.shiftKey) {
         var parent = node.getParent();
