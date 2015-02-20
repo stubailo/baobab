@@ -11,6 +11,38 @@ var getHashCode = function(str) {
 Template.tree.helpers({
   getHTMLContent: function() {
     return new Spacebars.SafeString(this.content);
+  },
+  crumbs: function () {
+    var crumbs = [];
+    var node = this;
+
+    while (true) {
+      parent = node.getParent();
+
+      if (! parent) {
+        var linker = Nodes.findOne({link: node._id});
+        if (linker) {
+          parent = linker.getParent();
+        }
+      }
+
+      node = parent;
+
+      if (node.content === null) {
+        crumbs.push({
+          content: "home"
+        });
+
+        break;
+      }
+
+      crumbs.push(node);
+    }
+
+    return _.map(crumbs.reverse(), function (crumb, index) {
+      crumb.index = index;
+      return crumb;
+    });
   }
 });
 
