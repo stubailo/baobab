@@ -30,5 +30,9 @@ Meteor.methods({
   shareNode: function (nodeId, targetUsername, writeable) {
     if (this.isSimulation) { return; }
     NodeTrustedApi.shareNode(nodeId, targetUsername, writeable, this.userId);
+  },
+
+  unshareNode: function (nodeId, targetUserId) {
+    NodeTrustedApi.unshareNode(nodeId, targetUserId, this.userId);
   }
 });

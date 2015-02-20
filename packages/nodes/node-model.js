@@ -190,5 +190,8 @@ _.extend(NodeModel.prototype, {
   multiUser: function () {
     return this.permissions.readOnly.length +
       this.permissions.readWrite.length !== 1;
+  },
+  unshareFrom: function (targetId) {
+    Meteor.call("unshareNode", this._id, targetId);
   }
 });

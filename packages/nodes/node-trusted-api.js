@@ -58,6 +58,13 @@ NodeTrustedApi = {
       user = Meteor.users.findOne(userId);
     }
 
+    var owner;
+    if (parent) {
+      owner = parent.owner;
+    } else {
+      owner = userId;
+    }
+
     var newNode = {
       _id: newId,
       content: content,
@@ -74,7 +81,8 @@ NodeTrustedApi = {
       updatedAt: new Date(),
       collapsedBy: {},
       permissions: permissions,
-      lockedBy: null
+      lockedBy: null,
+      owner: owner
     };
 
     check(newNode, Nodes.matchPattern);
@@ -253,7 +261,10 @@ NodeTrustedApi = {
         // this is the modifier that we need to apply to this node and all
         // of its children recursively to fix up the permissions
         var pushModifier = {
-          $pushAll: {}
+          $pushAll: {},
+          $set: {
+            owner: newParent.owner
+          }
         };
 
         if (! _.isEmpty(readOnlyPermsToAdd)) {
@@ -303,8 +314,6 @@ NodeTrustedApi = {
     check(writeable, Boolean);
     check(userId, String);
 
-    console.log(targetUsername);
-
     var targetUser = Meteor.users.findOne({
       username: targetUsername
     });
@@ -341,7 +350,10 @@ NodeTrustedApi = {
     } else {
       numUpdated = Nodes.update({
         _id:nodeId,
-        "permissions.readOnly.id": userId
+        $or: [
+          {"permissions.readOnly.id": userId},
+          {"permissions.readWrite.id": userId}
+        ]
       }, {$addToSet: {
         "permissions.readOnly": permissionToken
       } });
@@ -356,6 +368,27 @@ NodeTrustedApi = {
       permissionToken.inherited = true;
       NodeTrustedApi._shareNodeToId(child._id, permissionToken, writeable, userId);
     });
+  },
+
+  unshareNode: function (nodeId, targetUserId, userId) {
+    check(nodeId, String);
+    check(targetUserId, String);
+    check(userId, String);
+
+    numUpdated = Nodes.update({
+      _id: nodeId,
+      "permissions.readWrite.id": userId,
+      owner: { $ne: targetUserId }
+    }, {
+      $pull: {
+        "permissions.readOnly": { id: targetUserId },
+        "permissions.readWrite": { id: targetUserId }
+      }
+    });
+
+    if (numUpdated === 0) {
+      throw new Meteor.Error("permission-denied");
+    }
   },
 
   _markPermissionsInherited: function (permissionsField) {
@@ -380,5 +413,5 @@ NodeTrustedApi = {
     }, {
       $set: {lockedBy: null}
     });
-  } 
+  }
 };

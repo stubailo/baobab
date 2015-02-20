@@ -7,6 +7,9 @@ Template.shareModal.helpers({
   },
   node: function () {
     return Nodes.findOne(Session.get("shareModalNodeId"));
+  },
+  isOwner: function () {
+    return Template.parentData(1).owner === this.id;
   }
 });
 
@@ -21,5 +24,8 @@ Template.shareModal.events({
     this.shareWithUsername(username, permission === "readWrite");
 
     return false;
+  },
+  "click .remove": function () {
+    Nodes.findOne(this.nodeId).unshareFrom(this.userId);
   }
 });

@@ -145,5 +145,7 @@ Nodes.matchPattern = {
       inherited: Boolean,
       username: String
     }]
-  }
+  },
+
+  owner: String
 };

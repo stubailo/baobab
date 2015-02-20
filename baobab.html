@@ -81,10 +81,24 @@
 
           <ul>
             {{#each permissions.readOnly}}
-              <li>{{username}}, {{calendar date}}</li>
+              <li>{{username}}, {{calendar date}}, read only 
+
+                {{#with nodeId=../_id userId=id}}
+                  <button class="remove">remove</button>
+                {{/with}}
+              </li>
             {{/each}}
             {{#each permissions.readWrite}}
-              <li>{{username}}, {{calendar date}}</li>
+              <li>{{username}}, {{calendar date}},
+                {{#if isOwner}}
+                  owner
+                {{else}}
+                  editable
+                  {{#with nodeId=../_id userId=id}}
+                    <button class="remove">remove</button>
+                  {{/with}}
+                {{/if}}
+              </li>
             {{/each}}
           </ul>
 
