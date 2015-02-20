@@ -17,6 +17,18 @@
   </div>
 </body>
 
+<template name="children">
+  {{#each getOrderedChildren}}
+    {{#if link}}
+      {{#with getLinkedNode}}
+        {{> node}}
+      {{/with}}
+    {{else}}
+      {{> node}}
+    {{/if}}
+  {{/each}}
+</template>
+
 <template name="tree">
   {{#if $eq content null}}
     <h2>&nbsp;</h2>
@@ -24,9 +36,7 @@
     <h2 class="title">{{getHTMLContent}}</h2>
   {{/if}}
   <div class="list">
-  {{#each getOrderedChildren}}
-    {{> node}}
-  {{/each}}
+    {{> children}}
   </div>
 </template>
 
@@ -46,9 +56,7 @@
     </div>
     {{#unless isCollapsedByCurrentUser}}
       <div class="list">
-      {{#each getOrderedChildren}}
-        {{> node}}
-      {{/each}}
+        {{> children}}
       </div>
     {{/unless}}
   </div>

@@ -193,5 +193,9 @@ _.extend(NodeModel.prototype, {
   },
   unshareFrom: function (targetId) {
     Meteor.call("unshareNode", this._id, targetId);
+  },
+  getLinkedNode: function () {
+    console.log(this.link);
+    return Nodes.findOne(this.link);
   }
 });

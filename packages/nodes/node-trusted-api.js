@@ -24,6 +24,53 @@ var permDifference = function (left, right) {
 };
 
 NodeTrustedApi = {
+  insertLink: function (linkTarget, newId, parentNodeId, order, userId) {
+    if (! parentNodeId) {
+      throw new Error("link needs parent");
+    }
+
+    var parent = Nodes.findOne(parentNodeId);
+    if (! parent.isWriteableByUser(userId)) {
+      throw new Meteor.Error("parent-permission-denied");
+    }
+
+    var permissions = NodeTrustedApi._markPermissionsInherited(parent.permissions);
+
+    var user = Meteor.users.findOne(userId);
+    var owner = parent.owner;
+
+    var newNode = {
+      _id: newId,
+      content: null,
+      children: [],
+      createdBy: {
+        _id: user._id,
+        username: user.username
+      },
+      lastUpdatedBy: {
+        _id: user._id,
+        username: user.username
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      collapsedBy: {},
+      permissions: permissions,
+      lockedBy: null,
+      owner: owner,
+
+      // the actual link target
+      link: linkTarget
+    };
+
+    check(newNode, Nodes.matchPattern);
+
+    Nodes.insert(newNode);
+
+    var newChild = {order: order, _id: newId};
+    Nodes.update(parentNodeId, {$push: {children: newChild}});
+
+    return newId;
+  },
   insertNode: function (content, newId, parentNodeId, order, userId, username) {
     var parent;
     if (parentNodeId) {
@@ -329,12 +376,23 @@ NodeTrustedApi = {
       username: targetUsername
     };
 
+    var targetUserId = permissionToken.id;
+    var shareTargetRootNode = Meteor.users.findOne(targetUserId).rootNodeId;
+    var order = calculateNodeOrder(shareTargetRootNode);
+
+    NodeTrustedApi.insertLink(nodeId, Random.id(), shareTargetRootNode, order, targetUserId);
+
     NodeTrustedApi._shareNodeToId(nodeId, permissionToken, writeable, userId);
   },
 
   _shareNodeToId: function (nodeId, permissionToken, writeable, userId) {
     var node = Nodes.findOne(nodeId);
     var numUpdated;
+
+    if (_.findWhere(node.permissions.readOnly, {id: permissionToken.id}) ||
+      _.findWhere(node.permissions.readOnly, {id: permissionToken.id})) {
+      NodeTrustedApi.unshareNode(nodeId, permissionToken.id, userId);
+    }
 
     if (writeable) {
       numUpdated = Nodes.update({
@@ -375,6 +433,13 @@ NodeTrustedApi = {
     check(targetUserId, String);
     check(userId, String);
 
+    var node = Nodes.findOne(nodeId);
+
+    var linkNode = Nodes.findOne({link: nodeId, owner: targetUserId});
+    if (linkNode) {
+      NodeTrustedApi.removeNode(linkNode._id, targetUserId);
+    }
+
     numUpdated = Nodes.update({
       _id: nodeId,
       "permissions.readWrite.id": userId,
@@ -389,6 +454,10 @@ NodeTrustedApi = {
     if (numUpdated === 0) {
       throw new Meteor.Error("permission-denied");
     }
+
+    _.each(node.children, function (child) {
+      NodeTrustedApi.unshareNode(child._id, targetUserId, userId);
+    });
   },
 
   _markPermissionsInherited: function (permissionsField) {

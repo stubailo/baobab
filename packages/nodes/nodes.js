@@ -147,5 +147,8 @@ Nodes.matchPattern = {
     }]
   },
 
-  owner: String
+  owner: String,
+
+  // If this property is present, this is a link node
+  link: Match.Optional(String)
 };
