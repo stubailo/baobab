@@ -73,11 +73,19 @@ function saveContents(node) {
 
 Template.node.helpers({
   getSelectionClass: function() {
-    var isSelected = selectedStatusByNodeID.get(this._id) || false;
-    return isSelected ? " selected" : "";
+    var status = selectedStatusByNodeID.get(this._id);
+    if (status === SelectedStatus.UNSELECTED) {
+      return "";
+    }
+    return " selected";
   }
 });
 
+var SelectedStatus = {
+  UNSELECTED: 0,
+  SHIFT: 1,
+  ANCHORED: 2
+};
 var selectedStatusByNodeID = new ReactiveDict();
 var anchorNumberByNodeID = {};
 var nextAnchorNumber = 0;
@@ -97,13 +105,13 @@ function getMaxAnchorNodeID() {
 }
 
 function toggleSelected(node) {
-  var wasSelected = selectedStatusByNodeID.get(node._id);
-  if (wasSelected) {
-    selectedStatusByNodeID.set(node._id, false);
-    delete anchorNumberByNodeID[node._id];
-  } else {
-    selectedStatusByNodeID.set(node._id, true);
+  var status = selectedStatusByNodeID.get(node._id);
+  if (status === SelectedStatus.UNSELECTED) {
     addAnchorNode(node);
+    selectedStatusByNodeID.set(node._id, SelectedStatus.ANCHORED);
+  } else {
+    delete anchorNumberByNodeID[node._id];
+    selectedStatusByNodeID.set(node._id, SelectedStatus.UNSELECTED);
   }
 }
 
@@ -117,10 +125,12 @@ function extendSelected(node) {
   var rootNode = Nodes.findOne(Session.get("rootNodeId"));
 
   if (anchorNode) {
+    clearShiftSelected();
+
     var sawAnchorNode = false;
     var sawNodeNode = false;
-
     var pointer = rootNode;
+
     while (! (sawAnchorNode && sawNodeNode)) {
       if (pointer._id === anchorNode._id) {
         sawAnchorNode = true;
@@ -131,7 +141,10 @@ function extendSelected(node) {
       }
 
       if (sawAnchorNode || sawNodeNode) {
-        selectedStatusByNodeID.set(pointer._id, true);
+        var status = selectedStatusByNodeID.get(pointer._id);
+        if (status === SelectedStatus.UNSELECTED) {
+          selectedStatusByNodeID.set(pointer._id, SelectedStatus.SHIFT);
+        }
       }
 
       pointer = pointer.getFollowingNode();
@@ -147,14 +160,33 @@ function extendSelected(node) {
   }
 }
 
-function clearSelected(node) {
+function clearShiftSelected(node) {
+  var shiftSelectedNodeIDs = [];
+
   _.each(selectedStatusByNodeID.keys, function(value, nodeID) {
-    selectedStatusByNodeID.set(nodeID, false);
+    var status = selectedStatusByNodeID.get(nodeID);
+    if (status === SelectedStatus.SHIFT) {
+      // Bad to modify a ReactiveDict while iterating over it, so save
+      // these node IDs for later.
+      shiftSelectedNodeIDs.push(nodeID);
+    }
+  });
+
+  _.each(shiftSelectedNodeIDs, function(nodeID) {
+    selectedStatusByNodeID.set(nodeID, SelectedStatus.UNSELECTED);
+  });
+}
+
+function clearAllSelected() {
+  _.each(selectedStatusByNodeID.keys, function(value, nodeID) {
+    selectedStatusByNodeID.set(nodeID, SelectedStatus.UNSELECTED);
   });
 
   anchorNumberByNodeID = {};
   nextAnchorNumber = 0;
 }
+// TODO Find a better way of doing this.
+document.addEventListener("mousedown", clearAllSelected);
 
 Template.node.events({
   "focus .input": function(event, template) {
@@ -216,7 +248,7 @@ Template.node.events({
       return false;
     }
 
-    clearSelected();
+    clearAllSelected();
     event.stopPropagation();
   },
 
@@ -513,9 +545,7 @@ Template.node.rendered = function() {
 
   templatesByNodeID[nodeID] = template;
 
-  selectedStatusByNodeID.set(
-    nodeID, selectedStatusByNodeID.get(nodeID) || false
-  );
+  selectedStatusByNodeID.setDefault(nodeID, SelectedStatus.UNSELECTED);
 
   Tracker.autorun(function(computation) {
     if (getTemplateByNodeID(nodeID) !== template) {
