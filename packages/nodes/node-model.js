@@ -186,7 +186,6 @@ _.extend(NodeModel.prototype, {
     Meteor.call("shareNode", this._id, username, writeable);
   },
   sharedWithMe: function () {
-    console.log(this.permissions);
     return _.findWhere(this.permissions.readWrite, {inherited: false, id: Meteor.userId()}) ||
       _.findWhere(this.permissions.readOnly, {inherited: false, id: Meteor.userId()});
   },
@@ -208,6 +207,9 @@ _.extend(NodeModel.prototype, {
   isLocked: function () {
     var unlocked = ! this.lockedBy || this.lockedBy === Meteor.userId()
     return ! unlocked;
+  },
+  releaseLock: function () {
+    Meteor.call('releaseOwnNodeLock', this._id);
   },
   setCursorPresent: function () {
     Meteor.call('setNodeCursorPresent', this._id);

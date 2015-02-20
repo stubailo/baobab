@@ -95,8 +95,9 @@ Template.node.helpers({
   },
 
   whoseCursorColor: function () {
-    if (! this.cursorPresent) return;
-    return getColorFromId(this.cursorPresent.userId)
+    var cursorUserId = this.cursorPresent && this.cursorPresent.userId
+    if (! cursorUserId) return;
+    return getColorFromId(cursorUserId)
   }
 });
 

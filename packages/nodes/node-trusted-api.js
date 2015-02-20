@@ -475,7 +475,7 @@ NodeTrustedApi = {
 
   unlockNode: function (nodeId, when) {
     // unlock only if the time passed in matches (otherwise, the user updated again
-    // more recently, and we should wait for the last unlock call.)
+    // more recently, and we should wait for the last unlock call.) Can only be called from server
     Nodes.update({
       _id: nodeId,
       updatedAt: when
@@ -483,6 +483,16 @@ NodeTrustedApi = {
       $set: {lockedBy: null}
     });
   } ,
+
+  releaseOwnNodeLock: function (nodeId, userId) {
+    // the client can release its own lock (usually on leaving the node)
+    Nodes.update({
+      _id: nodeId,
+      lockedBy: userId
+    }, {
+      $set: {lockedBy: null}
+    });
+  },
 
   setNodeCursorPresent: function (nodeId, userId, username) {
     Nodes.update({
