@@ -132,19 +132,23 @@ _.extend(NodeModel.prototype, {
   },
 
   getArrowIconClasses: function() {
+    var classes = "";
+
     if (this.content === null) {
-      return " hidden";
+      classes += " hidden";
+    } else if (! this.hasChildren()) {
+      classes += " childless";
+    } else if (this.isCollapsedByCurrentUser()) {
+      classes += " collapsed";
+    } else {
+      classes += " expanded";
     }
 
-    if (! this.hasChildren()) {
-      return " childless";
+    if (this.hasBeenShared()) {
+      classes += " shared";
     }
 
-    if (this.isCollapsedByCurrentUser()) {
-      return " collapsed";
-    }
-
-    return " expanded";
+    return classes;
   },
 
   updateContent: function (newContent) {
@@ -176,29 +180,11 @@ _.extend(NodeModel.prototype, {
   isReadableByCurrentUser: function () {
     this.isReadableByUser(Meteor.userId());
   },
-  getShareUrl: function (writeable) {
-    var permsKey = writeable ? "readWrite" : "readOnly";
-
-    // check if we already have a writeable share URL
-    var perm = _.findWhere(this.permissions[permsKey], {type: "token"});
-
-    if (perm) {
-      // make sure the parent doesn't have the same token, so that this URL
-      // will actually only share the current node
-      var parent = this.getParent();
-      var parentPerm = _.findWhere(parent.permissions[permsKey],
-        {id: perm.id});
-
-      if (! parentPerm) {
-        return Meteor.absoluteUrl(this._id + "?token=" + perm.id);
-      }
-
-      // Otherwise, generate a new token as if there were none.
-    }
-
-    var token = Random.id();
-    Meteor.call("shareNodeToPublicUrl", this._id, token, writeable);
-
-    return Meteor.absoluteUrl(this._id + "?token=" + token);
+  shareWithUsername: function (username, writeable) {
+    Meteor.call("shareNode", this._id, username, writeable);
+  },
+  hasBeenShared: function () {
+    return _.findWhere(this.permissions.readWrite, {inherited: false}) &&
+      _.findWhere(this.permissions.readWrite, {inherited: false});
   }
 });

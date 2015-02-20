@@ -31,7 +31,7 @@ div.item .item  {
   bottom: 2px;
   position: absolute;
   margin-left: -50px;
-  border-left: 3px solid;
+  border-left: 5px solid;
   padding-left: 5px;
   font-size: 0.9em;
   width: 50px;
@@ -39,10 +39,14 @@ div.item .item  {
   span {
     opacity: 0;
   }
+}
 
-  &:hover span {
-    opacity: 1;
-  }
+.bullet:hover .editor span {
+  opacity: 1;
+}
+
+.bullet:focus .editor span {
+  opacity: 1;
 }
 
 .input {
@@ -79,11 +83,18 @@ div.item .item  {
   height: 20px;
   top: 0px;
   left: 20px;
-  line-height: 1.5em;
+  line-height: 1.4em;
+  text-indent: 0.3em;
   cursor: pointer;
 
   &:hover {
-    text-shadow: 0 0 10px blue;
+    text-shadow: 0 0 10px yellow;
+  }
+
+  &.shared {
+    color: blue;
+    background-color: #ddf;
+    border-radius: 10px;
   }
 }
 
@@ -102,6 +113,7 @@ div.item .item  {
 
 .arrow.expanded:before {
   content: "\25BC";
+  margin-left: -0.16em;
 }
 
 .node-context-menu-positioner {
@@ -134,12 +146,37 @@ div.item .item  {
     }
   }
 }
-
-.context-menu-overlay {
+.context-menu-overlay, .share-modal-overlay {
   position: fixed;
   bottom: 0;
   top: 0;
   right: 0;
   left: 0;
   z-index: 40;
+}
+
+.share-modal-overlay {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.share-modal {
+  position: fixed;
+  z-index: 100;
+  background: white;
+
+  width: 600px;
+  margin-left: -200px;
+
+  left: 50%;
+  top: 20%;
+
+  .title {
+    padding: 10px;
+    font-size: 1.1em;
+    border-bottom: #ccc 1px solid;
+  }
+
+  .body {
+    padding: 10px;
+  }
 }

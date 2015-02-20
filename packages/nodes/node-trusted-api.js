@@ -39,10 +39,10 @@ NodeTrustedApi = {
     } else {
       permissions = {
         readWrite: [{
-          type: "user",
           date: new Date(),
           id: userId,
-          inherited: false
+          inherited: false,
+          username: username
         }],
         readOnly: []
       };
@@ -66,10 +66,10 @@ NodeTrustedApi = {
         _id: user._id,
         username: user.username
       },
-      updatedBy: [{
+      lastUpdatedBy: {
         _id: user._id,
         username: user.username
-      }],
+      },
       createdAt: new Date(),
       updatedAt: new Date(),
       collapsedBy: {},
@@ -153,10 +153,8 @@ NodeTrustedApi = {
       $set: {
         content: newContent,
         updatedAt: now,
-        lockedBy: userId
-      },
-      $addToSet: {
-        updatedBy: {
+        lockedBy: userId,
+        lastUpdatedBy: {
           _id: user._id,
           username: user.username
         }
@@ -299,56 +297,27 @@ NodeTrustedApi = {
     });
   },
 
-  shareNode: function (nodeId, targetUserEmail, writeable, userId) {
+  shareNode: function (nodeId, targetUsername, writeable, userId) {
     check(nodeId, String);
-    check(targetUserEmail, String);
+    check(targetUsername, String);
     check(writeable, Boolean);
     check(userId, String);
 
+    console.log(targetUsername);
+
     var targetUser = Meteor.users.findOne({
-      "emails.address": targetUserEmail
+      username: targetUsername
     });
 
-    var targetUserId;
-    if (targetUser) {
-      targetUserId = targetUser._id;
-    } else {
-      if (Meteor.isClient) {
-        // We can't simulate sending an email
-        return;
-      }
-
-      // If we are trying to share with someone who doesn't have an account yet,
-      // then create the user and send them an enrollment email.
-      targetUserId = Accounts.createUser({
-        email: targetUserEmail,
-        password: Random.id()
-      });
-
-      Accounts.sendEnrollmentEmail(targetUserId);
+    if (! targetUser) {
+      throw new Meteor.Error("user-not-found");
     }
 
     var permissionToken = {
-      id: targetUserId,
-      type: "user",
+      id: targetUser._id,
       date: new Date(),
-      inherited: false
-    };
-
-    NodeTrustedApi._shareNodeToId(nodeId, permissionToken, writeable, userId);
-  },
-
-  shareNodeToPublicUrl: function (nodeId, token, writeable, userId) {
-    check(nodeId, String);
-    check(token, String);
-    check(writeable, Boolean);
-    check(userId, String);
-
-    var permissionToken = {
-      id: token,
-      type: "token",
-      date: new Date(),
-      inherited: false
+      inherited: false,
+      username: targetUsername
     };
 
     NodeTrustedApi._shareNodeToId(nodeId, permissionToken, writeable, userId);

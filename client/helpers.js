@@ -31,9 +31,9 @@ Template.node.helpers({
   },
 
   generatedColor: function () {
-    var h = getHashCode(this.createdBy._id) % 360;
+    var h = getHashCode(this.lastUpdatedBy._id) % 360;
 
-    return "hsl(" + h + ", 80%, 50%)";
+    return "hsl(" + h + ", 50%, 70%)";
   }
 });
 
@@ -43,11 +43,6 @@ Template.body.helpers({
   }
 });
 
-Template.nodeContextMenu.helpers({
-  position: function () {
-    return {
-      style: "top: " + Session.get("contextMenuPosition").top + "px; left: " +
-        Session.get("contextMenuPosition").left + "px"
-    };
-  }
+Template.registerHelper("calendar", function (date) {
+  return moment(date).calendar();
 });

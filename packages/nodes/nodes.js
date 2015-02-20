@@ -120,10 +120,10 @@ Nodes.matchPattern = {
   },
 
   // A list of all user ids that have ever edited this node
-  updatedBy: [{
+  lastUpdatedBy: {
     _id: String,
     username: String
-  }],
+  },
 
   // The user who is currently editing this node, locking it
   lockedBy: Match.OneOf(String, null),
@@ -136,14 +136,14 @@ Nodes.matchPattern = {
     readOnly: [{
       id: String,
       date: Date,
-      type: Match.OneOf("user", "token"),
-      inherited: Boolean
+      inherited: Boolean,
+      username: String
     }],
     readWrite: [{
       id: String,
       date: Date,
-      type: Match.OneOf("user", "token"),
-      inherited: Boolean
+      inherited: Boolean,
+      username: String
     }]
   }
 };

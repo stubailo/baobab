@@ -12,3 +12,4 @@ accounts-password
 insecure
 accounts-ui
 less
+momentjs:moment

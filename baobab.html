@@ -8,6 +8,8 @@
     <div class="context-menu-overlay"></div>
   {{/if}}
 
+  {{> shareModal}}
+
   <h1>Baobab</h1>
 
   {{> loginButtons}}
@@ -28,9 +30,9 @@
 
 <template name="node">
   <div class="item">
-    <div class="bullet">
+    <div class="bullet {{#if hasBeenShared}}shared{{/if}}">
       <div class="editor" style="left:{{getEditorDeindent}}px; border-color: {{generatedColor}}; color: {{generatedColor}}">
-        <span>{{createdBy.username}}</span></div>
+        <span>{{lastUpdatedBy.username}}</span></div>
       <a class="zoom" href="/{{_id}}">&mapstoup;</a>
       <div class="arrow{{getArrowIconClasses}}"></div>
       <div class="input" contentEditable></div>
@@ -49,9 +51,47 @@
   <div class="node-context-menu-positioner" {{position}}>
     <div class="node-context-menu">
       <ul>
-        <li>Share</li>
+        <li class="share">Sharing</li>
         <li>Delete</li>
       </ul>
     </div>
   </div>
+</template>
+
+<template name="shareModal">
+  {{#if shareModalOpen}}
+    {{#with node}}
+      <div class="share-modal-overlay"></div>
+      <div class="share-modal">
+        <div class="title">
+          Share settings for "{{content}}"
+
+          <button class="close">Close popup</button>
+        </div>
+
+        <div class="body">
+          <h3>Users</h3>
+
+          <ul>
+            {{#each permissions.readOnly}}
+              <li>{{username}}, {{calendar date}}</li>
+            {{/each}}
+            {{#each permissions.readWrite}}
+              <li>{{username}}, {{calendar date}}</li>
+            {{/each}}
+          </ul>
+
+          <form class="share-to-user">
+            <h4>Share with another Baobab user</h4>
+            <input type="text" name="username" placeholder="username" />
+
+            <input type="radio" name="permission" value="readOnly" checked/> Read Only
+            <input type="radio" name="permission" value="readWrite" /> Editable
+
+            <button>Share</button>
+          </form>
+        </div>
+      </div>
+    {{/with}}
+  {{/if}}
 </template>
