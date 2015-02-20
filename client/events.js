@@ -355,7 +355,8 @@ function getTemplateByNodeID(nodeID) {
 }
 
 Template.node.rendered = function() {
-  var node = this.data;
+  var template = this;
+  var node = template.data;
   if (! node) {
     return;
   }
@@ -363,10 +364,14 @@ Template.node.rendered = function() {
   var nodeID = node._id;
   var firstTime = true;
 
-  templatesByNodeID[nodeID] = this;
+  templatesByNodeID[nodeID] = template;
 
-  this.contentComputation = Tracker.autorun(function(computation) {
-    var template = getTemplateByNodeID(nodeID);
+  Tracker.autorun(function(computation) {
+    if (getTemplateByNodeID(nodeID) !== template) {
+      computation.stop();
+      return;
+    }
+
     var node = Nodes.findOne(nodeID);
     if (node) {
       var input = template.find(".input");
@@ -374,8 +379,8 @@ Template.node.rendered = function() {
         input.innerHTML = node.content;
       }
     }
+
     firstTime = false;
-    return computation;
   });
 
   refocus();
@@ -386,8 +391,6 @@ Template.node.destroyed = function() {
   if (! this.data) {
     return;
   }
-
-  this.contentComputation.stop();
 
   delete templatesByNodeID[this.data._id];
 };
