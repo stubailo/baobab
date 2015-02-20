@@ -427,7 +427,7 @@ Template.node.rendered = function() {
           focusedNode && focusedNode._id === node._id &&
           focusedInput && focusedInput !== input) {
         while (input.firstChild) {
-          input.removeChild(firstChild);
+          input.removeChild(input.firstChild);
         }
 
         while (focusedInput.firstChild) {
