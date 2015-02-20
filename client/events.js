@@ -712,6 +712,8 @@ Meteor.startup(function () {
     if (e.which === 27) {
       Session.set("cutActive", false);
       clearAllSelected();
+      Session.set("shareModalNodeId", null);
+      Session.set("contextMenuNodeId", null);
     }
 
     if (e.which === 8 || e.which === 46) { // delete

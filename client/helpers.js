@@ -71,7 +71,7 @@ Template.node.helpers({
       ++depth;
     }
 
-    return -48 * depth;
+    return -50 * depth + 4;
   },
 
   lastUpdatedColor: function () {
@@ -89,12 +89,13 @@ Template.node.helpers({
   whoseCursor: function () {
     var currentUsername = Meteor.user() && Meteor.user().username;
     var cursorUsername = this.cursorPresent && this.cursorPresent.username
-    return currentUsername === cursorUsername ? '' : cursorUsername
+    return currentUsername === cursorUsername ? '' : _.first(cursorUsername);
   },
 
   whoseCursorColor: function () {
     var cursorUserId = this.cursorPresent && this.cursorPresent.userId
     if (! cursorUserId) return;
+    if (cursorUserId === Meteor.userId()) return;
     return getColorFromId(cursorUserId)
   }
 });
