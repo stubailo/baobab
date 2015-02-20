@@ -144,7 +144,9 @@ _.extend(NodeModel.prototype, {
       classes += " expanded";
     }
 
-    if (this.hasBeenShared()) {
+    if (this.sharedWithMe()) {
+      classes += " sharedWithMe";
+    } else if (this.hasBeenShared()) {
       classes += " shared";
     }
 
@@ -183,9 +185,14 @@ _.extend(NodeModel.prototype, {
   shareWithUsername: function (username, writeable) {
     Meteor.call("shareNode", this._id, username, writeable);
   },
+  sharedWithMe: function () {
+    console.log(this.permissions);
+    return _.findWhere(this.permissions.readWrite, {inherited: false, id: Meteor.userId()}) ||
+      _.findWhere(this.permissions.readOnly, {inherited: false, id: Meteor.userId()});
+  },
   hasBeenShared: function () {
-    return _.findWhere(this.permissions.readWrite, {inherited: false}) &&
-      _.findWhere(this.permissions.readWrite, {inherited: false});
+    return _.findWhere(this.permissions.readWrite, {inherited: false}) ||
+      _.findWhere(this.permissions.readOnly, {inherited: false});
   },
   multiUser: function () {
     return this.permissions.readOnly.length +

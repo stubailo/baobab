@@ -42,7 +42,7 @@
 
 <template name="node">
   <div class="item">
-    <div class="bullet {{#if hasBeenShared}}shared{{/if}}">
+    <div class="bullet">
       {{#if multiUser}}
         <div class="editor" style="left:{{getEditorDeindent}}px; border-color: {{generatedColor}}; color: {{generatedColor}}">
           <span>{{lastUpdatedBy.username}}</span>
