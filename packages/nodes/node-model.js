@@ -205,7 +205,7 @@ _.extend(NodeModel.prototype, {
     return Nodes.findOne(this.link);
   },
   isLocked: function () {
-    var unlocked = ! this.lockedBy || this.lockedBy === Meteor.userId()
+    var unlocked = ! this.lockedBy || this.lockedBy === Meteor.userId();
     return ! unlocked;
   },
   releaseLock: function () {

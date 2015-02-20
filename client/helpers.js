@@ -79,12 +79,10 @@ Template.node.helpers({
   },
 
   maybeLocked: function () {
-    var unlocked = ! this.lockedBy || this.lockedBy === Meteor.userId();
     return this.isLocked() ? 'locked' : '';
   },
 
   maybeEditable: function () {
-    var unlocked = ! this.lockedBy || this.lockedBy === Meteor.userId();
     return this.isLocked() ? '': {'contentEditable': true};
   },
 

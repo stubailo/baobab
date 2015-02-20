@@ -256,8 +256,14 @@ Template.node.events({
     event.stopPropagation();
   },
   "mouseover .input": function (event) {
-    if (mouseSelectAnchorNode)
-      extendSelected(this)
+    if (mouseSelectAnchorNode) {
+      extendSelected(this);
+
+      document.activeElement.blur();
+      var selection = window.getSelection();
+      selection.removeAllRanges();
+    }
+
     event.stopPropagation();
   },
   "mouseleave .input": function (event) {
@@ -618,4 +624,104 @@ Template.body.events({
     Session.set("contextMenuNodeId", null);
     return false;
   }
+});
+
+var clipboard;
+
+// Get the smallest set of nodes that encompass all selected nodes (basically
+// remove children of existing selected nodes)
+var getRootsOfSelection = function () {
+  var nodeSet = {};
+  _.each(selectedStatusByNodeID.keys, function (serializedVal, key) {
+    var status = JSON.parse(serializedVal);
+    if (status === SelectedStatus.SHIFT || status === SelectedStatus.ANCHORED) {
+      nodeSet[key] = true;
+    }
+  });
+
+  _.each(_.keys(nodeSet), function (nodeId) {
+    var node = Nodes.findOne(nodeId);
+    var parent;
+    while (true) {
+      parent = node.getParent();
+
+      if (! parent) {
+        break;
+      }
+
+      if (_.has(nodeSet, parent._id)) {
+        delete nodeSet[nodeId];
+        break;
+      }
+      node = parent;
+    }
+  });
+
+  return _.keys(nodeSet);
+};
+
+var serializeNode = function (node) {
+  return {
+    content: node.content,
+    collapsed: node.isCollapsedByCurrentUser(),
+    children: _.map(node.getOrderedChildren(), function (childNode) {
+      return serializeNode(childNode);
+    })
+  };
+};
+
+var insertSerializedNode = function (parentId, previousNodeId, serializedNode) {
+  var newId = Nodes.insertNode(serializedNode.content, parentId, previousNodeId);
+
+  if (serializedNode.collapsed) {
+    Nodes.findOne(newId).collapse();
+  }
+
+  var prevId;
+
+  _.each(serializedNode.children, function (serializedChild) {
+    prevId = insertSerializedNode(newId, prevId, serializedChild);
+  });
+
+  return newId;
+};
+
+Meteor.startup(function () {
+  var ctrlDown = false;
+  var ctrlKey = 17, vKey = 86, cKey = 67;
+
+  $(document).keydown(function (e) {
+    if (e.keyCode === ctrlKey) ctrlDown = true;
+  });
+
+  $(document).keyup(function (e) {
+    if (e.keyCode === ctrlKey) ctrlDown = false;
+  });
+
+  $(document).keydown(function (e) {
+    if (ctrlDown || e.metaKey) {
+      if (e.keyCode === cKey) {
+        if (! _.isEmpty(anchorNumberByNodeID)) {
+          clipboard = _.map(getRootsOfSelection(), function (nodeId) {
+            return serializeNode(Nodes.findOne(nodeId));
+          });
+
+          return false;
+        }
+      } else if (e.keyCode === vKey) {
+        if (clipboard) {
+          var prevId = focusedNode._id;
+          _.each(clipboard, function (nodeToPaste) {
+            prevId = insertSerializedNode(focusedNode.getParent(), prevId, nodeToPaste);
+          });
+
+          if (! focusedNode.content) {
+            focusedNode.remove();
+          }
+
+          return false;
+        }
+      }
+    }
+  });
 });
