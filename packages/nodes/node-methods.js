@@ -43,7 +43,6 @@ Meteor.methods({
   setNodeCursorPresent: function (nodeId, clear) {
     var username = clear ? '' : Meteor.user() && Meteor.user().username;
     var userId = clear ? '' : Meteor.userId()
-    console.log('setNodeCursorPresent', username, userId)
     NodeTrustedApi.setNodeCursorPresent(nodeId, userId, username);
   }
 });

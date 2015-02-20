@@ -89,6 +89,8 @@ var SelectedStatus = {
 var selectedStatusByNodeID = new ReactiveDict();
 var anchorNumberByNodeID = {};
 var nextAnchorNumber = 0;
+var mouseSelectAnchorNode = '';
+
 
 function getMaxAnchorNodeID() {
   var maxNumber = -1;
@@ -248,7 +250,24 @@ Template.node.events({
       return false;
     }
 
+    mouseSelectAnchorNode = this._id;
+
     clearAllSelected();
+    event.stopPropagation();
+  },
+  "mouseover .input": function (event) {
+    if (mouseSelectAnchorNode)
+      extendSelected(this)
+    event.stopPropagation();
+  },
+  "mouseleave .input": function (event) {
+    if (mouseSelectAnchorNode && this._id === mouseSelectAnchorNode) {
+      addAnchorNode(this);
+    }
+    event.stopPropagation();
+  },
+  "mouseup": function (event) {
+    mouseSelectAnchorNode = '';
     event.stopPropagation();
   },
 
