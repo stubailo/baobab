@@ -121,6 +121,7 @@ function toggleSelected(node) {
 }
 
 function addAnchorNode(node) {
+  Session.set("cutActive", false);
   anchorNumberByNodeID[node._id] = nextAnchorNumber++;
 }
 
