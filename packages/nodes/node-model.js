@@ -186,5 +186,9 @@ _.extend(NodeModel.prototype, {
   hasBeenShared: function () {
     return _.findWhere(this.permissions.readWrite, {inherited: false}) &&
       _.findWhere(this.permissions.readWrite, {inherited: false});
+  },
+  multiUser: function () {
+    return this.permissions.readOnly.length +
+      this.permissions.readWrite.length !== 1;
   }
 });

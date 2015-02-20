@@ -10,9 +10,7 @@
 
   {{> shareModal}}
 
-  <h1>Baobab</h1>
-
-  {{> loginButtons}}
+  <div class="nav"><h1>Baobab</h1> | {{> loginButtons}}</div>
 </body>
 
 <template name="tree">
@@ -31,8 +29,10 @@
 <template name="node">
   <div class="item">
     <div class="bullet {{#if hasBeenShared}}shared{{/if}}">
-      <div class="editor" style="left:{{getEditorDeindent}}px; border-color: {{generatedColor}}; color: {{generatedColor}}">
-        <span>{{lastUpdatedBy.username}}</span></div>
+      {{#if multiUser}}
+        <div class="editor" style="left:{{getEditorDeindent}}px; border-color: {{generatedColor}}; color: {{generatedColor}}">
+          <span>{{lastUpdatedBy.username}}</span></div>
+      {{/if}}
       <a class="zoom" href="/{{_id}}">&mapstoup;</a>
       <div class="arrow{{getArrowIconClasses}}"></div>
       <div class="input" contentEditable></div>
