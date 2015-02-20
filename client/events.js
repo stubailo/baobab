@@ -173,9 +173,9 @@ Template.node.events({
         range.collapse(false); // Collapse to end.
         range.setStart(input, 0);
 
-        if (range.toString().match(/\S/)) {
-          // If there is any non-whitespace text before the end of the
-          // cursor, then don't consider deleting this node.
+        if (rangeContainsAnyRealContents(range)) {
+          // If there is anything that could be deleted before the end of
+          // the cursor, then don't consider deleting this node.
           continue;
         }
 
@@ -211,15 +211,16 @@ Template.node.events({
             refocus(ps);
           }
 
-        } else if (!node.content.match(/\S/)) {
+          return false;
+
+        } else if (!nodeContainsAnyRealContents(input)) {
           var pn = node.getPrecedingNode();
           if (pn) {
             node.remove();
             refocus(pn);
+            return false;
           }
         }
-
-        return false;
       }
 
     } else if (event.which === 9) { // tab
@@ -254,6 +255,29 @@ Template.node.events({
     }
   }
 });
+
+function rangeContainsAnyRealContents(range) {
+  if (range.toString() !== "") {
+    return true;
+  }
+
+  var docFrag = range.cloneContents();
+  return nodeContainsAnyRealContents(docFrag);
+}
+
+function nodeContainsAnyRealContents(node) {
+  for (var child = node.firstChild; child; child = child.nextSibling) {
+    if (child.nodeType === 3) {
+      if (child.nodeValue.match(/\S/)) {
+        return true;
+      }
+    } else if (!child.nodeName.match(/marker/i)) {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 var recordedSelectionsByID = {};
 
