@@ -81,7 +81,6 @@ Template.node.events({
 
   "blur .input": function(event, template) {
     insertMarkers(this);
-    console.log(blur, this)
     this.clearCursorPresent()
     event.stopPropagation();
   },

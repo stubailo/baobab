@@ -136,7 +136,10 @@ Nodes.matchPattern = {
   },
 
   // Whose cursor is on this node (most recent only)
-  cursorPresent: String,
+  cursorPresent: Match.Optional ({
+    _id: String,
+    username: String
+  }),
 
   // The user who is currently editing this node, locking it
   lockedBy: Match.OneOf(String, null),

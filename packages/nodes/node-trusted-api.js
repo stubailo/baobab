@@ -484,14 +484,24 @@ NodeTrustedApi = {
     });
   } ,
 
-  setNodeCursorPresent: function (nodeId, username) {
-    console.log(nodeId, username)
+  setNodeCursorPresent: function (nodeId, userId, username) {
     Nodes.update({
       _id: nodeId
     }, {
       $set: {
-        cursorPresent: username
+        cursorPresent: {
+          userId: userId,
+          username: username
+        }
       }
     });
+    // XXX should probably cancel redundant cursor clears - right now
+    // they all trigger even if no longer relevant.
+    if (Meteor.isServer) {
+      Meteor.setTimeout(function () {
+        NodeTrustedApi.setNodeCursorPresent(nodeId, null, '');
+      }, Settings.cursorPresentDuration);
+    }
+
   }
 };

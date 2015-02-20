@@ -46,6 +46,12 @@ Template.tree.helpers({
   }
 });
 
+var getColorFromId = function (id) {
+  var h = getHashCode(id) % 360;
+
+  return "hsl(" + h + ", 50%, 70%)";
+}
+
 Template.node.helpers({
   indent: function () {
     return 20;
@@ -68,10 +74,8 @@ Template.node.helpers({
     return -48 * depth;
   },
 
-  generatedColor: function () {
-    var h = getHashCode(this.lastUpdatedBy._id) % 360;
-
-    return "hsl(" + h + ", 50%, 70%)";
+  lastUpdatedColor: function () {
+    return getColorFromId(this.lastUpdatedBy._id);
   },
 
   maybeLocked: function () {
@@ -86,9 +90,13 @@ Template.node.helpers({
 
   whoseCursor: function () {
     var currentUsername = Meteor.user() && Meteor.user().username;
-    // var whoseCursor = this;
-    // console.log('whose cursor: ', currentUsername, whoseCursor)
-    return currentUsername === this.cursorPresent ? '' : this.cursorPresent
+    var cursorUsername = this.cursorPresent && this.cursorPresent.username
+    return currentUsername === cursorUsername ? '' : cursorUsername
+  },
+
+  whoseCursorColor: function () {
+    if (! this.cursorPresent) return;
+    return getColorFromId(this.cursorPresent.userId)
   }
 });
 

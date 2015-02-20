@@ -50,18 +50,18 @@
 
 <template name="node">
   <div class="item">
-    <div class="bullet">
+  <div class="bullet {{#if hasBeenShared}}shared{{/if}}">
       {{#if multiUser}}
-        <div class="editor" style="left:{{getEditorDeindent}}px; border-color: {{generatedColor}}; color: {{generatedColor}}">
+      <div class="editor" style="left:{{getEditorDeindent}}px; border-color: {{lastUpdatedColor}}; color: {{lastUpdatedColor}}">
           <span>{{lastUpdatedBy.username}}</span>
-        </div>
+      </div>
       {{/if}}
       {{#if hasChildren}}
       <a class="zoom" href="/{{_id}}">&mapstoup;</a>
       {{/if}}
       <div class="arrow{{getArrowIconClasses}}"></div>
       <div class="input {{maybeLocked}}" {{maybeEditable}}>  </div>
-      <div class="cursor-present">{{whoseCursor}}</div>
+      <div class="cursor-present" style="background-color: {{whoseCursorColor}}">{{whoseCursor}}</div>
     </div>
     {{#unless isCollapsedByCurrentUser}}
       <div class="list">
