@@ -390,7 +390,7 @@ NodeTrustedApi = {
     var numUpdated;
 
     if (_.findWhere(node.permissions.readOnly, {id: permissionToken.id}) ||
-      _.findWhere(node.permissions.readOnly, {id: permissionToken.id})) {
+      _.findWhere(node.permissions.readWrite, {id: permissionToken.id})) {
       NodeTrustedApi.unshareNode(nodeId, permissionToken.id, userId);
     }
 
