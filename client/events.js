@@ -71,6 +71,91 @@ function saveContents(node) {
   }
 }
 
+Template.node.helpers({
+  getSelectionClass: function() {
+    var isSelected = selectedStatusByNodeID.get(this._id) || false;
+    return isSelected ? " selected" : "";
+  }
+});
+
+var selectedStatusByNodeID = new ReactiveDict();
+var anchorNumberByNodeID = {};
+var nextAnchorNumber = 0;
+
+function getMaxAnchorNodeID() {
+  var maxNumber = -1;
+  var maxNodeID;
+
+  _.each(anchorNumberByNodeID, function(number, nodeID) {
+    if (number > maxNumber) {
+      maxNumber = number;
+      maxNodeID = nodeID;
+    }
+  });
+
+  return maxNodeID;
+}
+
+function toggleSelected(node) {
+  var wasSelected = selectedStatusByNodeID.get(node._id);
+  if (wasSelected) {
+    selectedStatusByNodeID.set(node._id, false);
+    delete anchorNumberByNodeID[node._id];
+  } else {
+    selectedStatusByNodeID.set(node._id, true);
+    addAnchorNode(node);
+  }
+}
+
+function addAnchorNode(node) {
+  anchorNumberByNodeID[node._id] = nextAnchorNumber++;
+}
+
+function extendSelected(node) {
+  var anchorNodeID = getMaxAnchorNodeID();
+  var anchorNode = anchorNodeID && Nodes.findOne(anchorNodeID);
+  var rootNode = Nodes.findOne(Session.get("rootNodeId"));
+
+  if (anchorNode) {
+    var sawAnchorNode = false;
+    var sawNodeNode = false;
+
+    var pointer = rootNode;
+    while (! (sawAnchorNode && sawNodeNode)) {
+      if (pointer._id === anchorNode._id) {
+        sawAnchorNode = true;
+      }
+
+      if (pointer._id === node._id) {
+        sawNodeNode = true;
+      }
+
+      if (sawAnchorNode || sawNodeNode) {
+        selectedStatusByNodeID.set(pointer._id, true);
+      }
+
+      pointer = pointer.getFollowingNode();
+    }
+
+  } else if (focusedNode) {
+    addAnchorNode(focusedNode);
+    extendSelected(node);
+
+  } else {
+    // As a last effort, we could examine window.getSelection(), but
+    // focusedNode should be set if any node has focus.
+  }
+}
+
+function clearSelected(node) {
+  _.each(selectedStatusByNodeID.keys, function(value, nodeID) {
+    selectedStatusByNodeID.set(nodeID, false);
+  });
+
+  anchorNumberByNodeID = {};
+  nextAnchorNumber = 0;
+}
+
 Template.node.events({
   "focus .input": function(event, template) {
     recordNodeAsFocused(template.data);
@@ -118,8 +203,24 @@ Template.node.events({
     return false;
   },
 
+  "mousedown .input": function(event) {
+    recordSelection.apply(this, arguments);
+
+    if (event.metaKey) {
+      toggleSelected(this);
+      return false;
+    }
+
+    if (event.shiftKey) {
+      extendSelected(this);
+      return false;
+    }
+
+    clearSelected();
+    event.stopPropagation();
+  },
+
   "keypress .input": recordSelection,
-  "mousedown .input": recordSelection,
   "mouseup .input": recordSelection,
   "mouseout .input": recordSelection,
 
@@ -411,6 +512,10 @@ Template.node.rendered = function() {
   var firstTime = true;
 
   templatesByNodeID[nodeID] = template;
+
+  selectedStatusByNodeID.set(
+    nodeID, selectedStatusByNodeID.get(nodeID) || false
+  );
 
   Tracker.autorun(function(computation) {
     if (getTemplateByNodeID(nodeID) !== template) {
