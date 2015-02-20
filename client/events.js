@@ -195,8 +195,12 @@ function clearAllSelected() {
   anchorNumberByNodeID = {};
   nextAnchorNumber = 0;
 }
+
 // TODO Find a better way of doing this.
 document.addEventListener("mousedown", clearAllSelected);
+document.addEventListener("mouseup", function() {
+  mouseSelectAnchorNode = null;
+});
 
 Template.node.events({
   "focus .input": function(event, template) {
@@ -278,10 +282,6 @@ Template.node.events({
     if (mouseSelectAnchorNode && this._id === mouseSelectAnchorNode) {
       addAnchorNode(this);
     }
-    event.stopPropagation();
-  },
-  "mouseup": function (event) {
-    mouseSelectAnchorNode = '';
     event.stopPropagation();
   },
 
