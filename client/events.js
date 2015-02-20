@@ -139,6 +139,11 @@ Template.node.events({
       }
 
     } else if (event.which === 38) { // up arrow
+      if (event.shiftKey) {
+        // Don't prevent shift/arrow-based selection.
+        return;
+      }
+
       while (node) {
         var pn = node.getPrecedingNode();
         if (pn && pn.isVisible()) {
@@ -149,6 +154,11 @@ Template.node.events({
       }
 
     } else if (event.which === 40) { // down arrow
+      if (event.shiftKey) {
+        // Don't prevent shift/arrow-based selection.
+        return;
+      }
+
       while (node) {
         var fn = node.getFollowingNode();
         if (fn && fn.isVisible()) {
