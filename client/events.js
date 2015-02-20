@@ -38,8 +38,6 @@ function insertMarkers(node) {
     range.collapse(true); // Collapse to start.
     range.insertNode(startMarker);
     endRange.insertNode(endMarker);
-
-    saveContents(node);
   }
 }
 
@@ -395,12 +393,12 @@ Template.node.events({
               prevInput.appendChild(input.firstChild);
             }
 
+            saveContents(ps);
             node.remove();
-            recordNodeAsFocused(ps);
+
             selection.collapse(dummySpan, 0);
             prevInput.removeChild(dummySpan);
-
-            saveContents(ps);
+            recordNodeAsFocused(ps);
 
           } else {
             node.remove();
