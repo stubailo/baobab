@@ -709,6 +709,11 @@ Meteor.startup(function () {
   });
 
   $(document).keydown(function (e) {
+    if (e.which === 27) {
+      Session.set("cutActive", false);
+      clearAllSelected();
+    }
+
     if (e.which === 8 || e.which === 46) { // delete
       if (! _.isEmpty(anchorNumberByNodeID)) {
         var yes = confirm("Are you sure you want to delete all selected nodes?");
