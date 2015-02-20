@@ -79,11 +79,11 @@ Template.node.helpers({
   },
 
   maybeLocked: function () {
-    return this.isLocked() ? 'locked' : '';
+    return this.isLocked && this.isLocked() ? 'locked' : '';
   },
 
   maybeEditable: function () {
-    return this.isLocked() ? '': {'contentEditable': true};
+    return this.isLocked && this.isLocked() ? '': {'contentEditable': true};
   },
 
   whoseCursor: function () {
