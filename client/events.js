@@ -1,5 +1,3 @@
-var focusedNode = null;
-
 Session.setDefault("contextMenuNodeId", null);
 
 // Prevent scrolling when the context menu is open
@@ -41,15 +39,41 @@ function insertMarkers(node) {
     range.insertNode(startMarker);
     endRange.insertNode(endMarker);
 
-    // TODO Debounce this?
+    saveContents(node);
+  }
+}
+
+function saveContents(node) {
+  var template = getTemplateByNodeID(node._id);
+  var input = template && template.find(".input");
+  if (input) {
+    var markers = input.getElementsByTagName("marker");
+    var reinsertions = [];
+
+    while (markers.length > 0) {
+      var lastMarker = markers.item(markers.length - 1);
+      reinsertions.push({
+        marker: lastMarker,
+        parentNode: lastMarker.parentNode,
+        nextSibling: lastMarker.nextSibling
+      });
+      lastMarker.parentNode.removeChild(lastMarker);
+    }
+
+    // Save input.innerHTML without any markers.
     node.updateContent(input.innerHTML);
+
+    // Restore the markers to their original locations.
+    while (reinsertions.length > 0) {
+      var r = reinsertions.pop();
+      r.parentNode.insertBefore(r.marker, r.nextSibling);
+    }
   }
 }
 
 Template.node.events({
   "focus .input": function(event, template) {
-    focusedNode = template.data;
-    // No need to call refocus because the input just received focus.
+    recordNodeAsFocused(template.data);
     return false;
   },
 
@@ -100,7 +124,7 @@ Template.node.events({
     var nonPrintingKeys = _.range(9, 28).concat(_.range(33, 41).concat(91));
 
     if (! _.contains(nonPrintingKeys, event.which)) {
-      this.updateContent(event.target.innerHTML);
+      saveContents(this);
     }
 
     return false;
@@ -133,7 +157,8 @@ Template.node.events({
 
         var newNodeID = Nodes.insertNode(
           content, node.getParent()._id, node._id);
-        focusedNode = Nodes.findOne(newNodeID);
+
+        recordNodeAsFocused(Nodes.findOne(newNodeID));
 
         return false;
       }
@@ -209,12 +234,11 @@ Template.node.events({
             }
 
             node.remove();
-            focusedNode = ps;
+            recordNodeAsFocused(ps);
             selection.collapse(dummySpan, 0);
             prevInput.removeChild(dummySpan);
 
-            // TODO Debounce this?
-            ps.updateContent(prevInput.innerHTML);
+            saveContents(ps);
 
           } else {
             node.remove();
@@ -311,10 +335,20 @@ function recordSelection(event) {
   delete recordedSelectionsByID[node._id];
 }
 
-function refocus(newFocusedNode) {
-  focusedNode = newFocusedNode || focusedNode;
-  var template = focusedNode && getTemplateByNodeID(focusedNode._id);
+var focusedNode = null;
+var focusedInput = null;
+function recordNodeAsFocused(node) {
+  focusedNode = node;
+  var template = getTemplateByNodeID(node._id);
+  focusedInput = template && template.find(".input");
+}
 
+function refocus(newFocusedNode) {
+  if (newFocusedNode) {
+    recordNodeAsFocused(newFocusedNode);
+  }
+
+  var template = focusedNode && getTemplateByNodeID(focusedNode._id);
   if (template) {
     var input = template.find(".input");
     var markers = input.getElementsByTagName("marker");
@@ -333,11 +367,9 @@ function refocus(newFocusedNode) {
 
       var startContainer = startMarker.parentNode;
       var startOffset = indexOfNode(startMarker);
-      startContainer.removeChild(startMarker);
 
       var endContainer = endMarker.parentNode;
       var endOffset = indexOfNode(endMarker);
-      endContainer.removeChild(endMarker);
 
       selection.collapse(startContainer, startOffset);
       selection.extend(endContainer, endOffset);
@@ -383,9 +415,27 @@ Template.node.rendered = function() {
     }
 
     var node = Nodes.findOne(nodeID);
-    if (node) {
-      var input = template.find(".input");
-      if (firstTime || document.activeElement !== input || (! document.hasFocus())) {
+    var input = node && template.find(".input");
+    if (input) {
+      // If this node was previously focused but we have rendered a new
+      // input <div>, set the new input's contents to the children of the
+      // old input before updating focusedInput.
+      if (firstTime &&
+          focusedNode && focusedNode._id === node._id &&
+          focusedInput && focusedInput !== input) {
+        while (input.firstChild) {
+          input.removeChild(firstChild);
+        }
+
+        while (focusedInput.firstChild) {
+          input.appendChild(focusedInput.firstChild);
+        }
+
+        recordNodeAsFocused(node);
+
+      } else if (firstTime ||
+                 document.activeElement !== input ||
+                 ! document.hasFocus()) {
         input.innerHTML = node.content;
       }
     }
