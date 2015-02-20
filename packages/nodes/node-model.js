@@ -204,5 +204,15 @@ _.extend(NodeModel.prototype, {
   getLinkedNode: function () {
     console.log(this.link);
     return Nodes.findOne(this.link);
+  },
+  isLocked: function () {
+    var unlocked = ! this.lockedBy || this.lockedBy === Meteor.userId()
+    return ! unlocked;
+  },
+  setCursorPresent: function () {
+    Meteor.call('setNodeCursorPresent', this._id);
+  },
+  clearCursorPresent: function () {
+    Meteor.call('setNodeCursorPresent', this._id, 'clear');
   }
 });

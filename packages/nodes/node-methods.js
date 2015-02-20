@@ -34,5 +34,11 @@ Meteor.methods({
 
   unshareNode: function (nodeId, targetUserId) {
     NodeTrustedApi.unshareNode(nodeId, targetUserId, this.userId);
+  },
+
+  setNodeCursorPresent: function (nodeId, clear) {
+    var username = clear ? null : Meteor.user() && Meteor.user().username;
+    // console.log(Meteor.user().username)
+    NodeTrustedApi.setNodeCursorPresent(nodeId, username);
   }
 });

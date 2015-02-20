@@ -4,6 +4,16 @@ Nodes = new Mongo.Collection("nodes", {
   }
 });
 
+// Reset all locks & cursor positions when server restarts
+if (Meteor.isServer) {
+  Meteor.startup(function () {
+    Nodes.find({}, {$set: {
+      lockedBy: null,
+      cursorPresent: {_id: null, username: ''}
+    }});
+  });
+}
+
 /**
  * Figure out what the order key needs to be to place an element inside a
  * parent node so that it is right after previousNode. If previousNodeId is not
@@ -119,11 +129,14 @@ Nodes.matchPattern = {
     username: String
   },
 
-  // A list of all user ids that have ever edited this node
+  // User who most recently edited this node
   lastUpdatedBy: {
     _id: String,
     username: String
   },
+
+  // Whose cursor is on this node (most recent only)
+  cursorPresent: String,
 
   // The user who is currently editing this node, locking it
   lockedBy: Match.OneOf(String, null),
@@ -131,6 +144,8 @@ Nodes.matchPattern = {
   // An object where the keys are user ids and the value is true if they have
   // collapsed this node
   collapsedBy: Object,
+
+
 
   permissions: {
     readOnly: [{

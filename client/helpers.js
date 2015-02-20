@@ -72,6 +72,23 @@ Template.node.helpers({
     var h = getHashCode(this.lastUpdatedBy._id) % 360;
 
     return "hsl(" + h + ", 50%, 70%)";
+  },
+
+  maybeLocked: function () {
+    var unlocked = ! this.lockedBy || this.lockedBy === Meteor.userId();
+    return this.isLocked() ? 'locked' : '';
+  },
+
+  maybeEditable: function () {
+    var unlocked = ! this.lockedBy || this.lockedBy === Meteor.userId();
+    return this.isLocked() ? '': {'contentEditable': true};
+  },
+
+  whoseCursor: function () {
+    var currentUsername = Meteor.user() && Meteor.user().username;
+    // var whoseCursor = this;
+    // console.log('whose cursor: ', currentUsername, whoseCursor)
+    return currentUsername === this.cursorPresent ? '' : this.cursorPresent
   }
 });
 

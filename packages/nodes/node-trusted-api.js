@@ -482,5 +482,16 @@ NodeTrustedApi = {
     }, {
       $set: {lockedBy: null}
     });
+  } ,
+
+  setNodeCursorPresent: function (nodeId, username) {
+    console.log(nodeId, username)
+    Nodes.update({
+      _id: nodeId
+    }, {
+      $set: {
+        cursorPresent: username
+      }
+    });
   }
 };

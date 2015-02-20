@@ -20,7 +20,6 @@ a.home {
 div.item {
   position: relative;
   padding: 0 0 0 20px;
-  width: 80%;
 }
 
 @indent: 27px;
@@ -60,6 +59,11 @@ div.item .item  {
   outline: 0px solid transparent;
   border: 0 none;
   min-height: 1.5em;
+}
+
+.input.locked {
+  background-color: #eee;
+  color: #777;
 }
 
 .zoom {
@@ -121,6 +125,12 @@ div.item .item  {
 .arrow.expanded:before {
   content: "\25BC";
   margin-left: -0.16em;
+}
+
+.cursor-present {
+  position: absolute;
+  top: 0;
+  left: -30px;
 }
 
 .node-context-menu-positioner {

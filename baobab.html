@@ -60,7 +60,8 @@
       <a class="zoom" href="/{{_id}}">&mapstoup;</a>
       {{/if}}
       <div class="arrow{{getArrowIconClasses}}"></div>
-      <div class="input" contentEditable></div>
+      <div class="input {{maybeLocked}}" {{maybeEditable}}>  </div>
+      <div class="cursor-present">{{whoseCursor}}</div>
     </div>
     {{#unless isCollapsedByCurrentUser}}
       <div class="list">

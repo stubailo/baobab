@@ -74,11 +74,15 @@ function saveContents(node) {
 Template.node.events({
   "focus .input": function(event, template) {
     recordNodeAsFocused(template.data);
+    this.setCursorPresent();
+    // No need to call refocus because the input just received focus.
     return false;
   },
 
   "blur .input": function(event, template) {
     insertMarkers(this);
+    console.log(blur, this)
+    this.clearCursorPresent()
     event.stopPropagation();
   },
 
@@ -171,7 +175,7 @@ Template.node.events({
 
       while (node) {
         var pn = node.getPrecedingNode();
-        if (pn && pn.isVisible()) {
+        if (pn && pn.isVisible() && ! pn.isLocked()) {
           refocus(pn);
           return false;
         }
@@ -186,7 +190,7 @@ Template.node.events({
 
       while (node) {
         var fn = node.getFollowingNode();
-        if (fn && fn.isVisible()) {
+        if (fn && fn.isVisible() && ! fn.isLocked()) {
           refocus(fn);
           return false;
         }
