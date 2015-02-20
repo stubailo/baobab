@@ -47,8 +47,8 @@
 </template>
 
 <template name="node">
-  <div class="item">
-    <div class="bullet {{#if hasBeenShared}}shared{{/if}}{{getSelectionClass}}">
+  <div class="item {{getSelectionClass}}">
+    <div class="bullet {{#if hasBeenShared}}shared{{/if}}">
       {{#if multiUser}}
       <div class="editor" style="left:{{getEditorDeindent}}px; border-color: {{lastUpdatedColor}}; color: {{lastUpdatedColor}}">
         <span>{{lastUpdatedBy.username}}</span>
