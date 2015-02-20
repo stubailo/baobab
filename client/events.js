@@ -75,7 +75,12 @@ Template.node.helpers({
     if (status === SelectedStatus.UNSELECTED) {
       return "";
     }
-    return " selected";
+
+    if (! Session.get("cutActive")) {
+      return " selected";
+    } else {
+      return " beingCut";
+    }
   }
 });
 
@@ -178,6 +183,10 @@ function clearShiftSelected(node) {
 }
 
 function clearAllSelected() {
+  if (Session.get("cutActive")) {
+    return;
+  }
+
   _.each(selectedStatusByNodeID.keys, function(value, nodeID) {
     selectedStatusByNodeID.set(nodeID, SelectedStatus.UNSELECTED);
   });
@@ -684,9 +693,11 @@ var insertSerializedNode = function (parentId, previousNodeId, serializedNode) {
   return newId;
 };
 
+Session.setDefault("cutActive", false);
+
 Meteor.startup(function () {
   var ctrlDown = false;
-  var ctrlKey = 17, vKey = 86, cKey = 67;
+  var ctrlKey = 17, xKey = 88, vKey = 86, cKey = 67;
 
   $(document).keydown(function (e) {
     if (e.keyCode === ctrlKey) ctrlDown = true;
@@ -697,8 +708,26 @@ Meteor.startup(function () {
   });
 
   $(document).keydown(function (e) {
+    if (e.which === 8 || e.which === 46) { // delete
+      if (! _.isEmpty(anchorNumberByNodeID)) {
+        var yes = confirm("Are you sure you want to delete all selected nodes?");
+
+        if (yes) {
+          _.each(getRootsOfSelection(), function (nodeId) {
+            Meteor.call("removeNode", nodeId);
+          });
+        }
+      }
+    }
+
     if (ctrlDown || e.metaKey) {
-      if (e.keyCode === cKey) {
+      if (e.keyCode === xKey) {
+        if (! _.isEmpty(anchorNumberByNodeID)) {
+          Session.set("cutActive", true);
+
+          return false;
+        }
+      } if (e.keyCode === cKey) {
         if (! _.isEmpty(anchorNumberByNodeID)) {
           clipboard = _.map(getRootsOfSelection(), function (nodeId) {
             return serializeNode(Nodes.findOne(nodeId));
@@ -707,7 +736,19 @@ Meteor.startup(function () {
           return false;
         }
       } else if (e.keyCode === vKey) {
-        if (clipboard) {
+        if (Session.get("cutActive")) {
+          var nodesToMove = getRootsOfSelection();
+          var prevId = focusedNode._id;
+          _.each(nodesToMove, function (node) {
+            Nodes.findOne(node).moveTo(focusedNode.getParent()._id, prevId);
+            prevId = node._id;
+          });
+
+          Session.set("cutActive", false);
+          clearAllSelected();
+
+          return false;
+        } else if (clipboard) {
           var prevId = focusedNode._id;
           _.each(clipboard, function (nodeToPaste) {
             prevId = insertSerializedNode(focusedNode.getParent(), prevId, nodeToPaste);
