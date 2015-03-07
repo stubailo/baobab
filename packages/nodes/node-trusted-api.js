@@ -71,29 +71,16 @@ NodeTrustedApi = {
 
     return newId;
   },
-  insertNode: function (content, newId, parentNodeId, order, userId, username) {
-    var parent;
-    if (parentNodeId) {
-      parent = Nodes.findOne(parentNodeId);
-      if (! parent.isWriteableByUser(userId)) {
-        throw new Meteor.Error("parent-permission-denied");
-      }
-    }
-
-    var permissions;
-    if (parent) {
-      permissions = NodeTrustedApi._markPermissionsInherited(parent.permissions);
-    } else {
-      permissions = {
-        readWrite: [{
-          date: new Date(),
-          id: userId,
-          inherited: false,
-          username: username
-        }],
-        readOnly: []
-      };
-    }
+  insertRootNode: function(newId, userId, username) {
+    var permissions = {
+      readWrite: [{
+        date: new Date(),
+        id: userId,
+        inherited: false,
+        username: username
+      }],
+      readOnly: []
+    };
 
     var user;
     if (username) {
@@ -105,12 +92,53 @@ NodeTrustedApi = {
       user = Meteor.users.findOne(userId);
     }
 
-    var owner;
-    if (parent) {
-      owner = parent.owner;
-    } else {
-      owner = userId;
+    var owner = userId;
+
+    var newNode = {
+      _id: newId,
+      content: null,
+      children: [],
+      createdBy: {
+        _id: user._id,
+        username: user.username
+      },
+      lastUpdatedBy: {
+        _id: user._id,
+        username: user.username
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      collapsedBy: {},
+      permissions: permissions,
+      lockedBy: null,
+      owner: owner
+    };
+
+    check(newNode, Nodes.matchPattern);
+    Nodes.insert(newNode);
+
+    return newId;
+  },
+
+  insertNode: function (content, newId, parentNodeId, order, userId, username) {
+    var parent = Nodes.findOne(parentNodeId);
+    if (! parent.isWriteableByUser(userId)) {
+      throw new Meteor.Error("parent-permission-denied");
     }
+
+    var permissions = NodeTrustedApi._markPermissionsInherited(parent.permissions);
+
+    var user;
+    if (username) {
+      user = {
+        username: username,
+        _id: userId
+      };
+    } else {
+      user = Meteor.users.findOne(userId);
+    }
+
+    var owner = parent.owner;
 
     var newNode = {
       _id: newId,
@@ -136,14 +164,8 @@ NodeTrustedApi = {
 
     Nodes.insert(newNode);
 
-    // All of the code below is for updating the parent, if this node doesn't
-    // have a parent then return
-    if (! parentNodeId) {
-      return newId;
-    }
-
+    // update the parent
     var newChild = {order: order, _id: newId};
-
     Nodes.update(parentNodeId, {$push: {children: newChild}});
 
     return newId;
@@ -281,13 +303,13 @@ NodeTrustedApi = {
       // If we are moving this node to a different subtree, there might be
       // different permissions there, so we have to update the inherited
       // permissions of the node we are moving
-      
+
       var newParent = Nodes.findOne(newParentNodeId);
 
       if (! _.isEqual(newParent.permissions, parent.permissions)) {
         // The permissions are in fact different, so we have to update the whole
         // subtree under the node being moved with the new inherited permissions
-        
+
         // First, take all of the permissions of the new parent
         var newParentPerms = NodeTrustedApi._markPermissionsInherited(newParent.permissions);
         var inheritedPerms = {

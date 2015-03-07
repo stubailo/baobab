@@ -5,7 +5,7 @@
 //     { content: "z" }
 //   ]
 // }
-// 
+//
 // parentId and order are optional
 var createTestTree = function (nodeTree, userId, parentId, order) {
   var newParentId = NodeTrustedApi.insertNode(nodeTree.content, Random.id(),

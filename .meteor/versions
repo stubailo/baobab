@@ -54,6 +54,7 @@ reactive-var@1.0.5-rc.0
 reload@1.1.3-rc.0
 retry@1.0.3-rc.0
 routepolicy@1.0.5-rc.0
+sashko:tracker-profiler@0.0.1
 service-configuration@1.0.4-rc.0
 session@1.1.0-rc.0
 sha@1.0.3-rc.0
