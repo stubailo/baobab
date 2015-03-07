@@ -75,25 +75,32 @@ Template.node.helpers({
   },
 
   lastUpdatedColor: function () {
-    return getColorFromId(this.lastUpdatedBy._id);
+    var lastUpdatedBy = this.getField("lastUpdatedBy");
+
+    return getColorFromId(lastUpdatedBy._id);
   },
 
   maybeLocked: function () {
-    return this.isLocked && this.isLocked() ? 'locked' : '';
+    return this.isLocked() ? 'locked' : '';
   },
 
   maybeEditable: function () {
-    return this.isLocked && this.isLocked() ? '': {'contentEditable': true};
+    return this.isLocked() ? '': {'contentEditable': true};
   },
 
   whoseCursor: function () {
+    var cursorPresent = this.getField("cursorPresent");
+
     var currentUsername = Meteor.user() && Meteor.user().username;
-    var cursorUsername = this.cursorPresent && this.cursorPresent.username
+    var cursorUsername = cursorPresent && cursorPresent.username
+
     return currentUsername === cursorUsername ? '' : _.first(cursorUsername);
   },
 
   whoseCursorColor: function () {
-    var cursorUserId = this.cursorPresent && this.cursorPresent.userId
+    var cursorPresent = this.getField("cursorPresent");
+
+    var cursorUserId = cursorPresent && cursorPresent.userId
     if (! cursorUserId) return;
     if (cursorUserId === Meteor.userId()) return;
     return getColorFromId(cursorUserId)

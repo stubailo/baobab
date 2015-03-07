@@ -1,15 +1,47 @@
+// Call like fields(nodeId, "content", "collapsedBy")
+var getFields = function (/* id, fields.. */) {
+  var fieldsObj = {};
+
+  var fields = _.rest(arguments);
+
+  _.each(fields, function (fieldName) {
+    fieldsObj[fieldName] = 1;
+  });
+
+  return Nodes.findOne(arguments[0], { fields: fieldsObj });
+};
+
 NodeModel = function (nodeDocument) {
   _.extend(this, nodeDocument);
 };
 
 _.extend(NodeModel.prototype, {
+  getFields: function (/* fields.. */) {
+    if (Meteor.isServer) {
+      return this;
+    }
+
+    return getFields(this._id, arguments);
+  },
+
+  getField: function (fieldName) {
+    console.log(this._id, fieldName);
+    return getFields(this._id, fieldName)[fieldName];
+  },
+
   getParent: function () {
+    if (Meteor.isClient) {
+      return Nodes.findOne({ "children._id": this._id }, { fields: { _id: 1 } });
+    }
+
     return Nodes.findOne({ "children._id": this._id });
   },
 
   isCollapsedByCurrentUser: function () {
-    return this.collapsedBy &&
-      this.collapsedBy[Meteor.userId()] === true;
+    var collapsedBy = this.getField("collapsedBy");
+
+    return collapsedBy &&
+      collapsedBy[Meteor.userId()] === true;
   },
 
   // A node is visible if none of its ancestors are collapsed.
@@ -25,11 +57,14 @@ _.extend(NodeModel.prototype, {
   },
 
   hasChildren: function() {
+    var children = this.getField("children");
+
     return !!(this.children && this.children.length > 0);
   },
 
   getPreviousSibling: function() {
     var parent = this.getParent();
+
     return parent ? this._prevSiblingHelper(
       this._id,
       parent.getOrderedChildren()
@@ -63,16 +98,22 @@ _.extend(NodeModel.prototype, {
   },
 
   getFirstChild: function() {
-    var firstChild = _.min(this.children, function(child) {
+    var children = this.getField("children");
+
+    var firstChild = _.min(children, function(child) {
       return child.order;
     });
+
     return firstChild ? Nodes.findOne(firstChild._id) : null;
   },
 
   getLastChild: function() {
-    var lastChild = _.max(this.children, function(child) {
+    var children = this.getField("children");
+
+    var lastChild = _.max(children, function(child) {
       return child.order;
     });
+
     return lastChild ? Nodes.findOne(lastChild._id) : null;
   },
 
@@ -115,11 +156,13 @@ _.extend(NodeModel.prototype, {
   },
 
   getOrderedChildren: function () {
-    if (! this.hasChildren()) {
+    var children = this.getField("children");
+
+    if (_.isEmpty(children)) {
       return null;
     }
 
-    var children = _.sortBy(this.children, "order");
+    var children = _.sortBy(children, "order");
     var childIds = _.pluck(children, "_id");
 
     var unsortedChildren = Nodes.find({_id: { $in: childIds } }).fetch();
@@ -166,15 +209,17 @@ _.extend(NodeModel.prototype, {
     Meteor.call("expandNode", this._id);
   },
   moveTo: function (newParentNodeId, previousNodeId) {
-    console.log("move to called", previousNodeId);
     Meteor.call("moveNode", this._id, newParentNodeId, previousNodeId);
   },
   isWriteableByUser: function (userId) {
-    return !! _.findWhere(this.permissions.readWrite, {id: userId});
+    var permissions = this.getField("permissions");
+    return !! _.findWhere(permissions.readWrite, {id: userId});
   },
   isReadableByUser: function (userId) {
+    var permissions = this.getField("permissions");
+
     return isWriteableByCurrentUser() ||
-      !! _.findWhere(this.permissions.readOnly, {id: userId});
+      !! _.findWhere(permissions.readOnly, {id: userId});
   },
   isWriteableByCurrentUser: function () {
     this.isWriteableByUser(Meteor.userId());
@@ -186,26 +231,35 @@ _.extend(NodeModel.prototype, {
     Meteor.call("shareNode", this._id, username, writeable);
   },
   sharedWithMe: function () {
-    return _.findWhere(this.permissions.readWrite, {inherited: false, id: Meteor.userId()}) ||
-      _.findWhere(this.permissions.readOnly, {inherited: false, id: Meteor.userId()});
+    var permissions = this.getField("permissions");
+
+    return _.findWhere(permissions.readWrite, {inherited: false, id: Meteor.userId()}) ||
+      _.findWhere(permissions.readOnly, {inherited: false, id: Meteor.userId()});
   },
   hasBeenShared: function () {
-    return _.findWhere(this.permissions.readWrite, {inherited: false}) ||
-      _.findWhere(this.permissions.readOnly, {inherited: false});
+    var permissions = this.getField("permissions");
+
+    return _.findWhere(permissions.readWrite, {inherited: false}) ||
+      _.findWhere(permissions.readOnly, {inherited: false});
   },
   multiUser: function () {
-    return this.permissions.readOnly.length +
-      this.permissions.readWrite.length !== 1;
+    var permissions = this.getField("permissions");
+
+    return permissions.readOnly.length +
+      permissions.readWrite.length !== 1;
   },
   unshareFrom: function (targetId) {
     Meteor.call("unshareNode", this._id, targetId);
   },
   getLinkedNode: function () {
-    console.log(this.link);
-    return Nodes.findOne(this.link);
+    var link = this.getField("link");
+
+    return Nodes.findOne(link);
   },
   isLocked: function () {
-    var unlocked = ! this.lockedBy || this.lockedBy === Meteor.userId();
+    var lockedBy = this.getField("lockedBy");
+
+    var unlocked = ! lockedBy || lockedBy === Meteor.userId();
     return ! unlocked;
   },
   releaseLock: function () {
