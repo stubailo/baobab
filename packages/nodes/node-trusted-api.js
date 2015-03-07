@@ -284,12 +284,14 @@ NodeTrustedApi = {
       
       var newParent = Nodes.findOne(newParentNodeId);
 
-      if (! _.isEqual(newParent.permissions, parent.permissions)) {
+      var newParentPerms = NodeTrustedApi._markPermissionsInherited(newParent.getField("permissions"));
+      var oldParentPerms = NodeTrustedApi._markPermissionsInherited(parent.getField("permissions"));
+
+      if (! _.isEqual(newParentPerms, oldParentPerms)) {
         // The permissions are in fact different, so we have to update the whole
         // subtree under the node being moved with the new inherited permissions
         
         // First, take all of the permissions of the new parent
-        var newParentPerms = NodeTrustedApi._markPermissionsInherited(newParent.permissions);
         var inheritedPerms = {
           readOnly: _.where(node.permissions.readOnly, {inherited: true}),
           readWrite: _.where(node.permissions.readWrite, {inherited: true})
@@ -320,6 +322,10 @@ NodeTrustedApi = {
 
         if (! _.isEmpty(readWritePermsToAdd)) {
           pushModifier.$pushAll["permissions.readWrite"] = readWritePermsToAdd;
+        }
+
+        if (_.isEmpty(pushModifier.$pushAll)) {
+          delete pushModifier["$pushAll"];
         }
 
         // We can't both pull and push in the same operation due to a mongo
