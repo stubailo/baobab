@@ -3,8 +3,8 @@ NodeModel = function (nodeDocument) {
 };
 
 _.extend(NodeModel.prototype, {
-  getParent: function () {
-    return Nodes.findOne({ "children._id": this._id });
+  getParent: function (options) {
+    return Nodes.findOne({ "children._id": this._id }, { fields: options.fields });
   },
 
   isCollapsedByCurrentUser: function () {
